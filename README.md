@@ -38,7 +38,7 @@ The XNSR distribution is made of the following dirs and files:
     - **test_XN_Cruncher_[TYPE].m**: a list of matlab scripts that can be run to automatically to test one of the datasets included in the **_DataIn_** dir. [TYPE] is one of the daset types available (e.g. Polignano, Lorca, etc). Start  **test_XN_Cruncher_Full.m** if you want to run XNSR using all the datasets included inside the **_DataIn_** dir. The ouputs will be deployed automatically inside the **_DataOut_** dir. This test scripts are very useful to understand the usage of **XN_Cruncher.m**. 
 - **_Cfg_**: XN_Cruncher.m needs different parameters which can be set inside a config (cfg) file. **_Cfg_** includes some examples of config file. XN_Cruncher.m accept a 3rd input parameter which is the cfg file. If the cfg file is excluded the script will use a set of defaults parameters embedded inside the code.
 - **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
-- **_DataOut_**: this dir is always empty when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
+- **_DataOut_**: this dir should include just a README.md file when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
 - **_DataCalib_**: this dir includes a pre-elaborated .mat output files produced by **XN_Cruncher.m** over the datasets included inside the **_Datain_** dir.
 - **_Images_**: it includes images used inside the README.md file.
 - **_README.md_**: this readme file.
@@ -46,7 +46,7 @@ The XNSR distribution is made of the following dirs and files:
 ## First run:
 - clone the GITHUB XNSR repo on your computer;
 - run matlab and add to your matlabpath the XNSR **_Software_** dir;
-- check that the **_DataOut_** dir is empty, otherwise delete all the files included in this dir;
+- check that the **_DataOut_** dir just inlcudes the README.md file, otherwise delete all the files included in this dir, except README.md;
 - run **test_XN_Cruncher_Full.m** it will take some minutes depending on your hardware. At the end the **_DataOut_** should be populated with the following .mat files:
     - CA04.mat
     - Edificio_Dorando.mat
