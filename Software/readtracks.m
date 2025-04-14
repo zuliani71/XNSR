@@ -26,13 +26,15 @@ if ischar(sacInfo.SAC)
     i        = 1;
     iMax     = size(textData,1);
     stopFlag = 0;
-    keyWords = {'Sampl. freq.:'};
+    keyWords = {'Sampl. freq.:','Sampling rate:'};
     while (stopFlag==0 && i<iMax)
         if isempty(str2num(textData(i,:)))
-            if isempty(regexp(textData(i,:),keyWords{1}))
-            else
-                out.samFreq = textscan(textData(i,length(keyWords{1})+1:end),'%f',1);
-                out.samFreq = out.samFreq{1};
+            for j = 1:length(keyWords)
+                if isempty(regexp(textData(i,:),keyWords{j}))
+                else
+                    out.samFreq = textscan(textData(i,length(keyWords{j})+1:end),'%f',1);
+                    out.samFreq = out.samFreq{1};
+                end
             end
         else
             dataStartIndex = i;
@@ -44,5 +46,5 @@ if ischar(sacInfo.SAC)
 else
     % this is a sac file
     out.samFreq = 1/sacInfo.Tsamp;
-    out.data    = sacInfo.data(:,2);    
+    out.data    = sacInfo.data(:,2);
 end

@@ -1,10 +1,8 @@
 function XN_DATA=XN_plotmatdata(varargin)
 % Made by D. Zuliani 2013/09/19
+% Modified by D. Zuliani 2025/04/12
 %
-
-%
-% DEFAULTS
-%close all;
+%% DEFAULTS
 format long g;
 scrsz           =   get(0,'ScreenSize');
 FONT.SIZE       =   16;
@@ -13,20 +11,28 @@ FONT.NAME       =   'Courier';
 XN_DATA         =   [];
 MAINPLOTTYPE    =   '3D';
 %
-% PARSING INPUT ARGUMENTS
+%% Setting SLASH for computer dependent PATHS
+if ispc
+    SLASH_TYPE = '\';
+else
+    SLASH_TYPE = '/';
+end
+%
+%% PARSING INPUT ARGUMENTS
 switch length(varargin)
     case 1
         DEFPATH = varargin{1};
     otherwise
-        DEFPATH = '/Users/dzuliani/SHARED/Projects/Seismology/2013.HV_RATIO_XNSR/DATI/DAROSARIAGALLIPOLI/Archivio';
+        [SCRIPTPATH, ~, ~] = fileparts(mfilename('fullpath'));
+        DEFPATH = [SCRIPTPATH,SLASH_TYPE,'..',SLASH_TYPE,'Data'];
 end
 %
-% Load Matlab XN dataset
+%% Load Matlab XN dataset
 [FILENAME,PATHNAME] = uigetfile('*.mat','Select the MATLAB XN Dataset',DEFPATH);
 XN_DATA=load([PATHNAME,FILENAME]);
 XN_DATA=XN_DATA.XN_DATA;
 %
-% PLOTS
+%% PLOTS
 %
 % PRELIMINAR SIGNAL PLOTS
 figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
@@ -94,11 +100,8 @@ IDIM(I)=1;
 axes('position', [0.05,0.1,0.4,0.8]);
 switch MAINPLOTTYPE
     case {'2D','2'}
-        % HQ=scatter(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,IDIM,ICOLOR,'filled'); %old matlab
         HQ=scatter(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,IDIM(:),ICOLOR(:),'filled'); %working on matlab R2018a for mac
-        %set(gca,'YDir','reverse');
         axis ij;
-        %axis tight;
         xlabel('AZIMUTH ANGLE [degrees]',...
             'FontSize',FONT.SIZE,...
             'FontWeight',FONT.WEIGHT,...
@@ -113,7 +116,6 @@ switch MAINPLOTTYPE
         H=stem3(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,XN_DATA.MAX_HV_RATIO,'color','k');
         set(H,'Marker','none');
         hold on;
-        % scatter3(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,XN_DATA.MAX_HV_RATIO,IDIM(:),ICOLOR(:),'filled'); %old matlab
         scatter3(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,XN_DATA.MAX_HV_RATIO(:,:),IDIM(:),ICOLOR(:),'filled'); %working on matlab R2018a for mac
         xlabel('AZIMUTH ANGLE [degrees]',...
             'FontSize',FONT.SIZE,...
@@ -160,7 +162,7 @@ set (POINTEROBJ,'Enable','on',...
     'DisplayStyle','datatip',...
     'UpdateFcn',@doratio);
 %
-% FUNCTION doratio FOR "ON THE FLY" SPECTRAL RATIO CALCULUS
+%% FUNCTION doratio FOR "ON THE FLY" SPECTRAL RATIO CALCULUS
     function output_txt = doratio(obj,event_obj)
         % Display the position of the data cursor
         % obj          Currently not used (empty)
@@ -168,8 +170,6 @@ set (POINTEROBJ,'Enable','on',...
         % RATIO        Works with the H/V ratios.
         XN_DATA = get(gca,'UserData');
         pos = get(event_obj,'Position');
-%         output_txt = {['AZIMUTH ANGLE: ',num2str(pos(1),4),'°'],...
-%             ['DIP ANGLE: ',num2str(pos(2),4),'°']};
         output_txt = {['AZIMUTH=',num2str(pos(1),4),'°'],...
             ['DIP=',num2str(pos(2),4),'°']};
         %
@@ -181,10 +181,6 @@ set (POINTEROBJ,'Enable','on',...
         ALPHA   =   XN_DATA.ALPHA_VEC(I)/pi*180;
         %
         % WORKING WITH DATA CALCULATED BY MATRIX MANIPULATIONS
-%         output_txt{end+1} = ['X/N MAX RATIO:           ',num2str(XN_DATA.MAX_HV_RATIO(I),4)];
-%         output_txt{end+1} = ['X/N MAX RATIO freq:(Hz): ',num2str(XN_DATA.MAX_HV_F(I),4)];
-%         output_txt{end+1} = ['MAX(X/N)=',num2str(XN_DATA.MAX_HV_RATIO(I),4)];
-%         output_txt{end+1} = ['f_MAX(X/N)=',num2str(XN_DATA.MAX_HV_F(I),4),'Hz'];
         subplot(XN_DATA.SUB_PLT2);
         PLT_HV=semilogx(XN_DATA.HV_RATIO_Fc,...
             XN_DATA.HV_RATIO(:,I));
@@ -218,10 +214,6 @@ set (POINTEROBJ,'Enable','on',...
             'FontSize',FONT.SIZE,...
             'FontWeight',FONT.WEIGHT,...
             'FontName',FONT.NAME);
-        
-        %         axis ([min(XN_DATA.HV_RATIO_Fc),...
-        %             max(XN_DATA.HV_RATIO_Fc),...
-        %             0,20]);
         axis ([min(XN_DATA.HV_RATIO_Fc),...
             max(XN_DATA.HV_RATIO_Fc),...
             min(min(XN_DATA.HV_RATIO-XN_DATA.HV_STD)),...

@@ -15,7 +15,7 @@ SACDATA=rsac2(filename);
 if ischar(SACDATA)
     % if an error is caught by rsac2, load_track will push out
     % that error string instead of the data
-    File = SACDATA;
+    File.SAC = SACDATA;
 else
     File.sta   = lh(SACDATA,'KSTNM');
     File.comp  = lh(SACDATA,'KCMPNM');

@@ -1,7 +1,66 @@
 # XNSR
-Matlab code to perform a different approach to single-station spectral ratio<br>
+# Introduction:
+**XNSR** is a **Matlab-based** software designed to compute spectral ratios from single seismic stations (typically Horizontal-to-Vertical Spectral Ratio **HVSR**), introducing a novel and more comprehensive approach. The standard HVSR technique assumes that the maximum seismic response occurs along the horizontal plane, while the minimum lies along the vertical axis. However:
+- this assumption may fail in the presence of body waves or significant lateral discontinuities;
+- XNSR explores the **3D space** to find any spatial plane where the spectral ratio reaches a maximum or minimum (hence the acronym ma**X** to mi**N** **S**pectral **R**atio – **XNSR**).
+
 ![image](/Images/XNSR.full.png)
+
+XNSR uses 3D signal rotations to:<br>
+- Identify the plane where the maximum/minimum spectral ratio occurs.
+- The process is divided into 10 key steps, including:
+	1.	Reading the dataset (SAC or TXT)
+	2.	Filtering and tapering
+	3.	Signal segmentation
+	4.	FFT computation
+	5.	Azimuth and dip rotation
+	6.	Spectrum computation
+	7.	Konno-Omachi filtering
+	8.	Ratio calculation (XY/Z → XN)
+	9.	Averaging and standard deviation
+	10.	2D/3D plotting
+
+The implementation in Matlab is notable for its efficiency and adaptability:
+- it combines **parallel processing** and **vectorized operations** to significantly reduce computation time (few minutes for full grid searches);
+- the code is structured to handle signal rotations in 3D (**azimuth** and **dip**), producing a high-resolution spectral ratio surface;
+- the most CPU-intensive steps (e.g., **Konno-Omachi** filtering) are optimized using Matlab’s **Parallel Computing Toolbox**;
+- the software includes **interactive plotting tools** for visual exploration of results, allowing the user to click on specific azimuth-dip combinations to view detailed spectra and statistics.
+
+## Structure:
+The XNSR distribution is made of the following dirs and files:
+- **_Software_**: it includes all the matlab scripts and functions to perform the XNSR analysis. The main scripts are:
+    - **XN_Cruncher.m**: this is the main script, run as it is to have some infos about the usage. It accepts three input parameters:
+        - 1st: it is a list of three input source files containig the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer (both SAC and TXT files are allowed);  
+        - 2nd: it is the .mat output file where the results of the XNSR analysis is saved;
+        - 3rd: it is a config file including the parameters used to tune the behavior  of the script (see also the details about the **_Cfg_** dir).
+    The output is a matlab variable including all the calculus details. The variable is saved into a .mat file that can be used for further elaborations.
+    - **XN_plotmatdata.m**: it is the code devoted to plot results saved using XN_Cruncher.m. Just run it, a smart GUI will help you to browse your dirs and select a saved XNSR .mat file.
+    - **test_XN_Cruncher_[TYPE].m**: a list of matlab scripts that can be run to automatically to test one of the datasets included in the **_DataIn_** dir. [TYPE] is one of the daset types available (e.g. Polignano, Lorca, etc). Start  **test_XN_Cruncher_Full.m** if you want to run XNSR using all the datasets included inside the **_DataIn_** dir. The ouputs will be deployed automatically inside the **_DataOut_** dir. This test scripts are very useful to understand the usage of **XN_Cruncher.m**. 
+- **_Cfg_**: XN_Cruncher.m needs different parameters which can be set inside a config (cfg) file. **_Cfg_** includes some examples of config file. XN_Cruncher.m accept a 3rd input parameter which is the cfg file. If the cfg file is excluded the script will use a set of defaults parameters embedded inside the code.
+- **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
+- **_DataOut_**: this dir is always empty when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
+- **_DataCalib_**: this dir includes a pre-elaborated .mat output files produced by **XN_Cruncher.m** over the datasets included inside the **_Datain_** dir.
+- **_Images_**: it includes images used inside the README.md file.
+- **_README.md_**: this readme file.
+
+## First run:
+- clone the GITHUB XNSR repo on your computer;
+- run matlab and add to your matlabpath the XNSR **_Software_** dir;
+- check that the **_DataOut_** dir is empty, otherwise delete all the files included in this dir;
+- run **test_XN_Cruncher_Full.m** it will take some minutes depending on your hardware. At the end the **_DataOut_** should be populated with the following .mat files:
+    - CA04.mat
+    - Edificio_Dorando.mat
+    - Ferrara.mat
+    - Lorca_001.mat
+    - Lorca_002.mat
+    - Polignano.mat
+    - ValMontanaia_001.mat
+    - sanGiuliano_001.mat
+    - sanGiuliano_002.mat
+- run **XN_plotmatdata.m** and use it to compare the results included in **_DataOut_** against the pre-elaborated analysis available in the **_DataCalib_** dir.
+- Enjoy ;-)
 <br>
-Articles available at:<br>
+
+## References:
 - http://dx.doi.org/10.13140/RG.2.2.14803.81443<br>
 - http://dx.doi.org/10.13140/RG.2.2.36283.23847<br>
