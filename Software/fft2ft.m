@@ -45,7 +45,7 @@ if isempty(find(DIM==1,1))
     % WORKING WITH FREQUENCY MATRIX
     if nargin == 2
         fsample = varargin{1};
-        f = ((0:1:(size(xout,1)-1))*(fsample/2)/size(xout(:,1),1))';
+        f = (0:size(xout,1)-1)'*fsample/Points;
         f = repmat(f,1,size(xout,2));
         xout=(2/Points)*xout;
         xout=cat(3,f,xout);
@@ -63,7 +63,7 @@ else
     end
     if nargin == 2
         fsample = varargin{1};
-        f = ((0:1:(size(xout,1)-1))*(fsample/2)/size(xout(:,1),1))';
+        f = (0:size(xout,1)-1)'*fsample/Points;
         xout=2/Points*xout;
         xout=[f,xout];
     else
