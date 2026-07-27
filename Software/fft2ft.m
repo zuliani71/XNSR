@@ -47,7 +47,14 @@ if isempty(find(DIM==1,1))
         fsample = varargin{1};
         f = (0:size(xout,1)-1)'*fsample/Points;
         f = repmat(f,1,size(xout,2));
-        xout=(2/Points)*xout;
+        xout=xout/Points;
+        if mod(Points,2)==0
+            % EVEN: do not double DC and Nyquist
+            xout(2:end-1,:,:)=2*xout(2:end-1,:,:);
+        else
+            % ODD: Nyquist is not present; do not double DC
+            xout(2:end,:,:)=2*xout(2:end,:,:);
+        end
         xout=cat(3,f,xout);
     else
     end
@@ -64,7 +71,14 @@ else
     if nargin == 2
         fsample = varargin{1};
         f = (0:size(xout,1)-1)'*fsample/Points;
-        xout=2/Points*xout;
+        xout=xout/Points;
+        if mod(Points,2)==0
+            % EVEN: do not double DC and Nyquist
+            xout(2:end-1)=2*xout(2:end-1);
+        else
+            % ODD: Nyquist is not present; do not double DC
+            xout(2:end)=2*xout(2:end);
+        end
         xout=[f,xout];
     else
     end
