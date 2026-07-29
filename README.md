@@ -89,6 +89,7 @@ The XNSR paths should be listed first. Regression tests are available in:
 ```matlab
 run('Software/test_fft2ft.m')
 run('Software/test_KonnoOhmachiFilter.m')
+run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
 
 The Konno-Ohmachi implementation precomputes its normalized smoothing
@@ -96,6 +97,11 @@ weights once and reuses them inside the page-wise `parfor`. Filtering is
 performed as a matrix product, avoiding the large temporary arrays produced
 by the historical `repmat`/`accumarray` implementation while preserving its
 numerical result.
+
+`test_XN_Cruncher_CA04_Konno.m` runs the complete 600-second CA04 dataset
+with the full azimuth/dip grid, Konno-Ohmachi smoothing and page-wise
+`parfor`. It writes `DataOut/CA04_Konno_optimized.mat`, leaving the
+historical `DataOut/CA04.mat` untouched.
 
 ## References:
 - http://dx.doi.org/10.13140/RG.2.2.14803.81443<br>
