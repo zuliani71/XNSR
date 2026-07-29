@@ -88,7 +88,14 @@ The XNSR paths should be listed first. Regression tests are available in:
 
 ```matlab
 run('Software/test_fft2ft.m')
+run('Software/test_KonnoOhmachiFilter.m')
 ```
+
+The Konno-Ohmachi implementation precomputes its normalized smoothing
+weights once and reuses them inside the page-wise `parfor`. Filtering is
+performed as a matrix product, avoiding the large temporary arrays produced
+by the historical `repmat`/`accumarray` implementation while preserving its
+numerical result.
 
 ## References:
 - http://dx.doi.org/10.13140/RG.2.2.14803.81443<br>

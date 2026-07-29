@@ -8,6 +8,12 @@ function xout = fft2ft(xin, varargin)
 %   the vendored +spectral package distributed in Software/+spectral.
 
 narginchk(1, 2);
+if isvector(xin)
+    % Historical FFT2FT behavior: vectors are always processed and
+    % returned as columns, irrespective of their input orientation.
+    xin = xin(:);
+end
+
 if nargin == 1
     xout = spectral.halfSpectrum(xin, 1);
     return

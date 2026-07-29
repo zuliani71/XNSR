@@ -34,6 +34,14 @@ assert(abs(abs(OUT_amp_matrix(1,2,2))-6) < 1e-12);
 assert(abs(abs(OUT_amp_matrix(3,2,2))-4) < 1e-12);
 assert(abs(abs(OUT_amp_matrix(end,2,2))-8) < 1e-12);
 
+% Row vectors occur in XN_Cruncher and must retain the historical
+% column-oriented output layout.
+OUT_row = fft2ft(fft(x_even.'),Fs_test);
+assert(isequal(size(OUT_row),[N_even/2+1,2]));
+assert(max(abs(OUT_row(:)-OUT_amp_even(:))) < 1e-12);
+HALF_row = fft2ft(fft(x_even.'));
+assert(iscolumn(HALF_row));
+
 % The raw half spectrum must round-trip through ft2fft for vectors,
 % matrices and 3-D arrays, with both even and odd original lengths.
 rng(17);

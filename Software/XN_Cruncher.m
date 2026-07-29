@@ -280,6 +280,13 @@ switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
     case 'K'
         % KONNOOMACHI FILTERING
         disp('WORKING WITH KONNOOHMACHI');
+        % The frequency grid and b coefficient are constant throughout the
+        % smoothing stage. Build and normalize the window once, then reuse
+        % it in every serial or PARFOR operation.
+        KONNO_FC = PARAM.COMM.fc;
+        KONNO_B = PARAM.KONNO.b;
+        KONNO_WEIGHTS = KonnoOhmachiWeights(F_VECT,KONNO_FC,KONNO_B);
+        NUM_SPECTRA = size(FT_XY_ROT,2);
         switch upper(PARAM.SCRIPT.CALCULUS_MODE)
             case {'MIXED','M'}
                 %
@@ -292,16 +299,22 @@ switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
                 tic
                 size(FT_XY_ROT,3)
                 parfor i = 1:size(FT_XY_ROT,3)
-                    XY_SPECTRUM(:,:,i) = KonnoOhmachiFilter(FT_XY_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
-                    Z_SPECTRUM(:,:,i)  = KonnoOhmachiFilter(FT_Z_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
+                    FILTERED = KonnoOhmachiFilter( ...
+                        [FT_XY_ROT(:,:,i),FT_Z_ROT(:,:,i)], ...
+                        F_VECT,KONNO_FC,KONNO_B,KONNO_WEIGHTS);
+                    XY_SPECTRUM(:,:,i) = FILTERED(:,1:NUM_SPECTRA);
+                    Z_SPECTRUM(:,:,i)  = FILTERED(:,NUM_SPECTRA+1:end);
                 end
                 toc
             case {'VECTORIZATION','V'}
                 %
                 % SLOWER FOR BIG AMMOUNT OF MEMORY USAGE BUT
                 % FASTER WITH SMALL DASASETS
-                XY_SPECTRUM = KonnoOhmachiFilter(FT_XY_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
-                Z_SPECTRUM   = KonnoOhmachiFilter(FT_Z_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
+                FILTERED = KonnoOhmachiFilter( ...
+                    cat(2,FT_XY_ROT,FT_Z_ROT), ...
+                    F_VECT,KONNO_FC,KONNO_B,KONNO_WEIGHTS);
+                XY_SPECTRUM = FILTERED(:,1:NUM_SPECTRA,:);
+                Z_SPECTRUM  = FILTERED(:,NUM_SPECTRA+1:end,:);
                 XY_SPECTRUM = squeeze(XY_SPECTRUM);
                 Z_SPECTRUM  = squeeze(Z_SPECTRUM);
         end
