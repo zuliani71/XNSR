@@ -297,7 +297,6 @@ switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
                 % SLOWER FOR A SMALL AMMOUNT OF MEMORY USAGE BUT
                 % FASTER WITH BIG DASASETS
                 tic
-                size(FT_XY_ROT,3)
                 parfor i = 1:size(FT_XY_ROT,3)
                     FILTERED = KonnoOhmachiFilter( ...
                         [FT_XY_ROT(:,:,i),FT_Z_ROT(:,:,i)], ...
