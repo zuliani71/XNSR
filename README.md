@@ -39,7 +39,10 @@ The XNSR distribution is made of the following dirs and files:
 - **_Cfg_**: XN_Cruncher.m needs different parameters which can be set inside a config (cfg) file. **_Cfg_** includes some examples of config file. XN_Cruncher.m accept a 3rd input parameter which is the cfg file. If the cfg file is excluded the script will use a set of defaults parameters embedded inside the code.
 - **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
 - **_DataOut_**: this dir should include just a README.md file when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
-- **_DataCalib_**: this dir includes a pre-elaborated .mat output files produced by **XN_Cruncher.m** over the datasets included inside the **_Datain_** dir.
+- **_DataCalib_**: this dir includes pre-elaborated `.mat` outputs produced
+  by **XN_Cruncher.m** over the datasets inside **_DataIn_**. The files in
+  the directory root use triangular smoothing; **_KonnoOhmachi_** contains
+  the corresponding references generated with Konno–Ohmachi smoothing.
 - **_Images_**: it includes images used inside the README.md file.
 - **_README.md_**: this readme file.
 
@@ -92,6 +95,16 @@ run('Software/test_triangFilter.m')
 run('Software/test_KonnoOhmachiFilter.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
+
+One Konno–Ohmachi calibration can be regenerated with:
+
+```matlab
+generate_KonnoOhmachiCalibration("CA04")
+```
+
+The accepted dataset names are listed in
+`Software/generate_KonnoOhmachiCalibration.m`. Outputs are written to
+`DataCalib/KonnoOhmachi` using `Cfg/XN_Cruncher_Konno.cfg`.
 
 When a percentage-based triangular window is narrower than the FFT bin
 spacing and contains no samples, `triangFilter` uses the closest available
