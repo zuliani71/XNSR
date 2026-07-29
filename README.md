@@ -46,6 +46,10 @@ The XNSR distribution is made of the following dirs and files:
 ## First run:
 - clone the GITHUB XNSR repo on your computer;
 - run matlab and add to your matlabpath the XNSR **_Software_** dir;
+- do not add external copies of `fft2ft` or `ft2fft`: XNSR includes a
+  versioned copy of the common `+spectral` library inside **_Software_**.
+  Adding only **_Software_** makes both the legacy entry points and the
+  namespaced functions (`spectral.*`) available;
 - check that the **_DataOut_** dir just inlcudes the README.md file, otherwise delete all the files included in this dir, except README.md;
 - run **test_XN_Cruncher_Full.m** it will take some minutes depending on your hardware. At the end the **_DataOut_** should be populated with the following .mat files:
     - CA04.mat
@@ -60,6 +64,31 @@ The XNSR distribution is made of the following dirs and files:
 - run **XN_plotmatdata.m** and use it to compare the results included in **_DataOut_** against the pre-elaborated analysis available in the **_DataCalib_** dir.
 - Enjoy ;-)
 <br>
+
+## Spectral utility dependency
+
+XNSR vendors the common MATLAB spectral utilities in:
+
+```text
+Software/+spectral
+```
+
+The historical functions `fft2ft` and `ft2fft` remain in `Software` as
+compatibility entry points. They delegate the numerical operations to the
+vendored package, so a fresh clone is reproducible and does not depend on a
+user-specific MATLAB path. To verify the active copy after adding `Software`:
+
+```matlab
+which fft2ft -all
+which ft2fft -all
+which spectral.halfSpectrum
+```
+
+The XNSR paths should be listed first. Regression tests are available in:
+
+```matlab
+run('Software/test_fft2ft.m')
+```
 
 ## References:
 - http://dx.doi.org/10.13140/RG.2.2.14803.81443<br>

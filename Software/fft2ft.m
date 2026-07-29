@@ -1,85 +1,30 @@
-function [xout] = fft2ft(xin,varargin);
-% xout = fft2ft(xin) implements the fft to ft (single left side fft)
-% conversion between the xin and xout vectors. If 2nd parameter is
-% inserted this last is intended to be the sample rate frequency.
-% In this case xout is a vector with 2 collumns 1st for frequency
-% values 2nd for amplitude values.
-% fft2ft now can handle 2D and 3D input matrix. For each matrix
-% signal vectors are accommdated inside the matrix collumns.
-% If 2nd parameter is inserted this last is intended to be the sample
-% rate frequency. In this case xout is a 3D matrix with at least 2
-% pages, the 1st for frequency values and the 2nd and further for
-% amplitude values.
-% e.g.
-% xout = fft2ft(xin); % no sampling rate defined
-% xout = fft2ft(xout,500); %500Hz sampling rate
+function xout = fft2ft(xin, varargin)
+%FFT2FT Legacy-compatible FFT to one-sided-spectrum conversion.
+%   H = FFT2FT(X) extracts the raw non-negative-frequency half.
+%   OUT = FFT2FT(X,FS) returns a one-sided amplitude spectrum using the
+%   historical vector or page-based output layout.
 %
-% Made by D. Zuliani 2004
-% Modified by D. Zuliani 2013/07/19
-% Modified by D. Zuliani 2013/08/19
+%   This XNSR compatibility entry point delegates the numerical work to
+%   the vendored +spectral package distributed in Software/+spectral.
 
-%
-% CHECK OUT IF INPUT IS A VECTOR OR A MATRIX
-DIM = size(xin);
-if isempty(find(DIM==1,1))
-    Points=size(xin,1);
-    switch ndims(xin)
-        case 2
-            % 2D MATRIX
-            % WARNING THIS WORKS JUST ALONG COLLUMNS
-            if mod(Points,2)==0
-                xout=xin(1:1+Points/2,:);
-            else
-                xout=xin(1:(1+Points)/2,:);
-            end
-        case 3
-            % 3D MATRIX
-            % WARNING THIS WORKS JUST ALONG COLLUMNS AND PAGES
-            if mod(Points,2)==0
-                xout=xin(1:1+Points/2,:,:);
-            else
-                xout=xin(1:(1+Points)/2,:,:);
-            end
-    end
-    %
-    % WORKING WITH FREQUENCY MATRIX
-    if nargin == 2
-        fsample = varargin{1};
-        f = (0:size(xout,1)-1)'*fsample/Points;
-        f = repmat(f,1,size(xout,2));
-        xout=xout/Points;
-        if mod(Points,2)==0
-            % EVEN: do not double DC and Nyquist
-            xout(2:end-1,:,:)=2*xout(2:end-1,:,:);
-        else
-            % ODD: Nyquist is not present; do not double DC
-            xout(2:end,:,:)=2*xout(2:end,:,:);
-        end
-        xout=cat(3,f,xout);
-    else
-    end
-else
-    %
-    % VECTOR
-    xin=xin(:);
-    Points=size(xin,1);
-    if mod(Points,2)==0
-        xout=xin(1:1+Points/2);
-    else
-        xout=xin(1:(1+Points)/2);
-    end
-    if nargin == 2
-        fsample = varargin{1};
-        f = (0:size(xout,1)-1)'*fsample/Points;
-        xout=xout/Points;
-        if mod(Points,2)==0
-            % EVEN: do not double DC and Nyquist
-            xout(2:end-1)=2*xout(2:end-1);
-        else
-            % ODD: Nyquist is not present; do not double DC
-            xout(2:end)=2*xout(2:end);
-        end
-        xout=[f,xout];
-    else
-    end
+narginchk(1, 2);
+if nargin == 1
+    xout = spectral.halfSpectrum(xin, 1);
+    return
+end
+
+fs = varargin{1};
+[amplitude, frequency] = spectral.oneSidedAmplitudeFromFFT(xin, fs, 1);
+
+if isvector(xin)
+    xout = [frequency, amplitude(:)];
+    return
+end
+
+frequencyShape = ones(1, max(ndims(amplitude), 2));
+frequencyShape(1) = numel(frequency);
+frequency = reshape(frequency, frequencyShape);
+frequency = repmat(frequency, [1, size(amplitude, 2), ...
+    ones(1, max(ndims(amplitude) - 2, 0))]);
+xout = cat(3, frequency, amplitude);
 end

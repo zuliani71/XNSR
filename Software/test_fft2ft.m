@@ -34,6 +34,26 @@ assert(abs(abs(OUT_amp_matrix(1,2,2))-6) < 1e-12);
 assert(abs(abs(OUT_amp_matrix(3,2,2))-4) < 1e-12);
 assert(abs(abs(OUT_amp_matrix(end,2,2))-8) < 1e-12);
 
+% The raw half spectrum must round-trip through ft2fft for vectors,
+% matrices and 3-D arrays, with both even and odd original lengths.
+rng(17);
+for N_roundtrip = [15 16]
+    X_roundtrip = fft(randn(N_roundtrip,3,2),[],1);
+    H_roundtrip = fft2ft(X_roundtrip);
+    if mod(N_roundtrip,2)==0
+        parity = 'e';
+    else
+        parity = 'o';
+    end
+    X_rebuilt = ft2fft(H_roundtrip,'o',parity);
+    assert(max(abs(X_rebuilt(:)-X_roundtrip(:))) < 1e-10);
+end
+
+% The formerly ambiguous one-optional-argument form now defaults to an
+% odd original length and must be equivalent to the explicit call.
+H_default = fft2ft(fft(randn(15,1)));
+assert(isequal(ft2fft(H_default,'o'),ft2fft(H_default,'o','o')));
+
 fprintf('N pari: %.12f Hz\n',OUT_even(end,1));
 fprintf('N dispari: %.12f Hz\n',OUT_odd(end,1));
 fprintf('Ampiezze N pari: DC=%.12f, interna=%.12f, Nyquist=%.12f\n', ...
@@ -41,4 +61,4 @@ fprintf('Ampiezze N pari: DC=%.12f, interna=%.12f, Nyquist=%.12f\n', ...
     abs(OUT_amp_even(end,2)));
 fprintf('Ampiezze N dispari: DC=%.12f, interna=%.12f\n', ...
     abs(OUT_amp_odd(1,2)),abs(OUT_amp_odd(3,2)));
-disp('TUTTI I TEST FFT2FT SONO SUPERATI');
+disp('TUTTI I TEST FFT2FT/FT2FFT SONO SUPERATI');
