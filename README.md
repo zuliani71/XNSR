@@ -88,9 +88,15 @@ The XNSR paths should be listed first. Regression tests are available in:
 
 ```matlab
 run('Software/test_fft2ft.m')
+run('Software/test_triangFilter.m')
 run('Software/test_KonnoOhmachiFilter.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
+
+When a percentage-based triangular window is narrower than the FFT bin
+spacing and contains no samples, `triangFilter` uses the closest available
+frequency bin. This prevents undefined `0/0` outputs without changing any
+frequency whose original triangular window already contained samples.
 
 The Konno-Ohmachi implementation precomputes its normalized smoothing
 weights once and reuses them inside the page-wise `parfor`. Filtering is

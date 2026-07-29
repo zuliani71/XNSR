@@ -18,6 +18,8 @@ function [y] = triangFilter(x,f,fc,pcent,varargin)
 % - pcent is the percent of each fc central ferquencies.
 % triangFilter smoothing function is a option to be used
 % instead of KonnoOhmachiFilter.
+% If a percentage window is narrower than the FFT bin spacing and does
+% not contain any samples, the closest available frequency bin is used.
 %
 % e.g. 
 %      f = (0.1:0.1:10)'; x = f.^2; fc = (1:5)';  
@@ -71,8 +73,15 @@ fSupBound=fc+fc*pcent/100;
 winTriang = zeros(length(f),length(fc)); % Preallocating for speed up
 lenTriang = zeros(length(fc),1); % Preallocating for speed up
 for i=1:length(fc)
-    lenTriang(i) = sum(f>=fInfBound(i) & f<=fSupBound(i));
-    winTriang((f>=fInfBound(i) & f<=fSupBound(i)),i)=triang(lenTriang(i));   
+    binMask = f>=fInfBound(i) & f<=fSupBound(i);
+    if ~any(binMask)
+        % A narrow low-frequency window may fall between adjacent FFT
+        % bins. Use the nearest bin instead of producing 0/0 below.
+        [~,nearestBin] = min(abs(f-fc(i)));
+        binMask(nearestBin) = true;
+    end
+    lenTriang(i) = sum(binMask);
+    winTriang(binMask,i)=triang(lenTriang(i));
 end
 %
 % CREATING A SINGLE COLUMN OF TRIANG COEFFS.
@@ -133,6 +142,6 @@ switch nDims
     case 3
         % ACCOMODATING THE 2D STRUCTURE IN
         % A 3D MATRIX
-        y = reshape(y,[m XSIZE(2) XSIZE(3)]);
+        y = reshape(y,[m xSize(2) xSize(3)]);
     otherwise
 end
