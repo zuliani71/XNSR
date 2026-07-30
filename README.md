@@ -109,10 +109,9 @@ run('Software/test_XN_Cruncher_CA04_Konno.m')
 The scripts named `test_XN_Cruncher_<dataset>.m` are reproducible examples
 for the nine bundled experiments. They read the three components from
 `DataIn`, write `<dataset>.mat` to `DataOut`, and call
-`compare_XNSRCalibration` against `DataCalib/Triang`. Scripts whose name
-ends in `_CFGFILE` demonstrate the same workflow with an explicit
-configuration file. The Konno–Ohmachi CA04 test uses
-`DataCalib/KonnoOhmachi/CA04.mat`.
+`compare_XNSRCalibration` against `DataCalib/Triang`. The Konno–Ohmachi
+CA04 test uses `DataCalib/KonnoOhmachi/CA04.mat`. Custom parameter files
+can be passed directly as the third argument of `XN_Cruncher`.
 
 An existing output can also be checked manually:
 

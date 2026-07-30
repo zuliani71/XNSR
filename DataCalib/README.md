@@ -13,8 +13,9 @@ azimuth/dip grid. All numeric scientific fields are finite.
 
 Running any `Software/test_XN_Cruncher_<dataset>.m` script recreates the
 triangular result in `DataOut` and automatically checks its scientific
-fields against the matching file in `DataCalib/Triang`. The `_CFGFILE`
-scripts demonstrate how to supply an explicit XNSR configuration.
+fields against the matching file in `DataCalib/Triang`. A custom
+configuration can be passed directly as the third argument of
+`XN_Cruncher`.
 
 An output can also be compared explicitly after adding `Software` to the
 MATLAB path:
