@@ -223,23 +223,24 @@ toc
 %% FFT MANIUPULATION
 % 1) WORKING INSIDE THE FFT DOMAIN
 % 2) RECOVERING THE FFT HALF LEFT SIDE
-disp('FFT + FFT2FT');
+disp('FFT + ONE-SIDED SPECTRUM');
 tic;
-FT_X    = fft2ft(fft(X_SPLIT),PARAM.SIG.F);
-FT_Y    = fft2ft(fft(Y_SPLIT),PARAM.SIG.F);
-FT_Z    = fft2ft(fft(Z_SPLIT),PARAM.SIG.F);
+[FT_X,F_VECT] = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(X_SPLIT),PARAM.SIG.F,1);
+FT_Y = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(Y_SPLIT),PARAM.SIG.F,1);
+FT_Z = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(Z_SPLIT),PARAM.SIG.F,1);
 toc
 %
 %% REDUCING THE DATASET ACCORDING THE FREQUENCY LIMITS
 disp('DASET REDUCING BY FREQ. LIMS');
 tic;
-F_VECT      = fft2ft(fft(X_SPLIT(:,1)),PARAM.SIG.F);
-F_VECT      = F_VECT(:,1);
 I           = find((F_VECT>=PARAM.SIG.F_LIM(1)) & (F_VECT<=PARAM.SIG.F_LIM(2)));
 F_VECT      = F_VECT(I);
-FT_X        = FT_X(I,:,2);
-FT_Y        = FT_Y(I,:,2);
-FT_Z        = FT_Z(I,:,2);
+FT_X        = FT_X(I,:);
+FT_Y        = FT_Y(I,:);
+FT_Z        = FT_Z(I,:);
 toc
 %
 %%
@@ -432,8 +433,8 @@ set (POINTEROBJ,'Enable','on',...
         % RATIO        Works with the H/V ratios.
         XN_DATA = get(gca,'UserData');
         pos = get(event_obj,'Position');
-        output_txt = {['AZIMUTH ANGLE: ',num2str(pos(1),4),'°'],...
-            ['DIP ANGLE: ',num2str(pos(2),4),'°']};
+        output_txt = {['AZIMUTH ANGLE: ',num2str(pos(1),4),'Â°'],...
+            ['DIP ANGLE: ',num2str(pos(2),4),'Â°']};
         %
         % RECOVER SELECTED ALPHA and THETA
         I1 = find(round(XN_DATA.ALPHA_VEC/pi*180)==round(pos(1)));
