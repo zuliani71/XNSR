@@ -3,7 +3,8 @@
 The `.mat` files in this directory are the reference outputs for the nine
 datasets distributed in `DataIn`.
 
-- Files in `DataCalib` use triangular smoothing (`SMOOTHING_WIN_TYPE = 'T'`).
+- Files in `DataCalib/Triang` use triangular smoothing
+  (`SMOOTHING_WIN_TYPE = 'T'`).
 - Files in `DataCalib/KonnoOhmachi` use Konno–Ohmachi smoothing
   (`SMOOTHING_WIN_TYPE = 'K'`, `b = 40`).
 

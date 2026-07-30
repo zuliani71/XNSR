@@ -40,9 +40,10 @@ The XNSR distribution is made of the following dirs and files:
 - **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
 - **_DataOut_**: this dir should include just a README.md file when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
 - **_DataCalib_**: this dir includes pre-elaborated `.mat` outputs produced
-  by **XN_Cruncher.m** over the datasets inside **_DataIn_**. The files in
-  the directory root use triangular smoothing; **_KonnoOhmachi_** contains
-  the corresponding references generated with Konno–Ohmachi smoothing.
+  by **XN_Cruncher.m** over the datasets inside **_DataIn_**.
+  **_DataCalib/Triang_** contains the references generated with triangular
+  smoothing, while **_DataCalib/KonnoOhmachi_** contains the corresponding
+  references generated with Konno–Ohmachi smoothing.
 - **_Images_**: it includes images used inside the README.md file.
 - **_README.md_**: this readme file.
 
@@ -64,7 +65,9 @@ The XNSR distribution is made of the following dirs and files:
     - ValMontanaia_001.mat
     - sanGiuliano_001.mat
     - sanGiuliano_002.mat
-- run **XN_plotmatdata.m** and use it to compare the results included in **_DataOut_** against the pre-elaborated analysis available in the **_DataCalib_** dir.
+- run **XN_plotmatdata.m** and use it to compare the results included in
+  **_DataOut_** against the appropriate pre-elaborated analysis in
+  **_DataCalib/Triang_** or **_DataCalib/KonnoOhmachi_**.
 - Enjoy ;-)
 <br>
 
@@ -111,6 +114,9 @@ generate_KonnoOhmachiCalibration("CA04")
 The accepted dataset names are listed in
 `Software/generate_KonnoOhmachiCalibration.m`. Outputs are written to
 `DataCalib/KonnoOhmachi` using `Cfg/XN_Cruncher_Konno.cfg`.
+
+Triangular calibration references are stored separately in
+`DataCalib/Triang`.
 
 When a percentage-based triangular window is narrower than the FFT bin
 spacing and contains no samples, `triangFilter` uses the closest available
