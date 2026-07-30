@@ -73,7 +73,14 @@ for lineNumber = 1:numel(lines)
         rethrow(parseException);
     end
 
-    CFG = add_nested_field(CFG,fields,value);
+    try
+        CFG = addNestedField(CFG,fields,value);
+    catch fieldException
+        if startsWith(fieldException.identifier,'XNSR:ReadCfg:')
+            cfgError(cfgfile,lineNumber,fieldException.message);
+        end
+        rethrow(fieldException);
+    end
     seenFields(fieldKey) = true;
 end
 
@@ -196,6 +203,38 @@ end
 function value = numericTokenValue(token)
 token = regexprep(token,'[dD]','e');
 value = str2double(token);
+end
+
+function structure = addNestedField(structure,fields,value)
+%ADDNESTEDFIELD Add a value without silently replacing existing branches.
+currentField = fields{1};
+
+if numel(fields) == 1
+    if isfield(structure,currentField)
+        if isstruct(structure.(currentField))
+            error('XNSR:ReadCfg:FieldConflict', ...
+                ['Cannot assign a value to %s because it is already ', ...
+                 'used as a configuration group.'],currentField);
+        end
+        error('XNSR:ReadCfg:DuplicateField', ...
+            'Field %s is already assigned.',currentField);
+    end
+    structure.(currentField) = value;
+    return
+end
+
+if isfield(structure,currentField)
+    if ~isstruct(structure.(currentField)) || ~isscalar(structure.(currentField))
+        error('XNSR:ReadCfg:FieldConflict', ...
+            ['Cannot create a nested field below %s because it already ', ...
+             'contains a value.'],currentField);
+    end
+    child = structure.(currentField);
+else
+    child = struct();
+end
+
+structure.(currentField) = addNestedField(child,fields(2:end),value);
 end
 
 function cfgError(cfgfile,lineNumber,message)
