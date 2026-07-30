@@ -1,8 +1,11 @@
 function out=readtracks(varargin)
-% Made by D. Zuliani 2016/02/02
-format long g;
+%READTRACKS Read a SAC or supported text waveform file.
+%   OUT = READTRACKS(FILE) returns sampling frequency and waveform data.
+%   OUT = READTRACKS(FILE1,FILE2,FILE3) reads three component files.
 %
-% DEFAULTS
+%   Originally written by D. Zuliani.
+format long g;
+% Initialize the output.
 out.samFreq = [];
 out.data    = [];
 switch nargin
@@ -17,11 +20,10 @@ switch nargin
         end
         return
 end
-%
-% SAC or TXT
+% Try SAC first, then fall back to supported text formats.
 sacInfo=readsac(inputFile);
 if ischar(sacInfo.SAC)
-    % this is a txt file probably asc, txt  or trc type
+    % The file is likely an ASC, TXT, or TRC text waveform.
     textData = char(textread(inputFile,'%s','delimiter','\n'));
     i        = 1;
     iMax     = size(textData,1);
@@ -44,7 +46,7 @@ if ischar(sacInfo.SAC)
     end
     out.data=str2num(textData(dataStartIndex:iMax,:));
 else
-    % this is a sac file
+    % The file contains SAC data.
     out.samFreq = 1/sacInfo.Tsamp;
     out.data    = sacInfo.data(:,2);
 end

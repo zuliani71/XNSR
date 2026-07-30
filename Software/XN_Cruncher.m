@@ -1,97 +1,79 @@
 function XN_DATA=XN_Cruncher(varargin)
-% Made by D. Zuliani and T. Stabile 2013/07/18
-% Modified by D. Zuliani 2013/07/19
-% Modified by D. Zuliani 2013/08/20
-% Modified by D. Zuliani 2013/08/22
-% Modified by D. Zuliani 2013/08/23
-% Modified by D. Zuliani 2013/08/24
-% Modified by D. Zuliani 2013/08/27
-% Modified by D. Zuliani 2013/09/19
-% Modified by D. Zuliani 2013/09/20
-% Modified by D. Zuliani 2016/02/02
-% Modified by D. Zuliani 2025/04/12
+%XN_CRUNCHER Compute directional horizontal-to-vertical spectral ratios.
+%   XN_DATA = XN_CRUNCHER(FILELIST,OUTPUTFILE) uses embedded defaults.
+%   XN_DATA = XN_CRUNCHER(FILELIST,OUTPUTFILE,CFGFILE) reads parameters
+%   from CFGFILE.
+%   XN_DATA = XN_CRUNCHER(...,SHOWPLOTS) controls creation of the
+%   interactive figures. SHOWPLOTS defaults to true.
 %
-% 1st TIME REMEBER TO OPEN THE MATLABPOOL
-% use the command: matlabpool open
-%
+%   Originally developed by D. Zuliani and T. Stabile.
+
 %% Initial settings
 format long g;
-scrsz = get(0,'ScreenSize');
-%
-% Setting SLASH for computer dependent PATHS
+
+% Select the platform-specific path separator.
 if ispc
     SLASH_TYPE = '\';
 else
     SLASH_TYPE = '/';
 end
-%
-%% Working with input arguments
+%% Input arguments
 switch nargin
     case 2
         FILELIST            = varargin{1};
         FILE_MATLAB_OUT     = varargin{2};
         CFG_FILE            = [];
+        SHOW_PLOTS          = true;
     case 3
         FILELIST            = varargin{1};
         FILE_MATLAB_OUT     = varargin{2};
         CFG_FILE            = varargin{3};
+        SHOW_PLOTS          = true;
+    case 4
+        FILELIST            = varargin{1};
+        FILE_MATLAB_OUT     = varargin{2};
+        CFG_FILE            = varargin{3};
+        SHOW_PLOTS          = varargin{4};
     otherwise
-        disp('number of input arguments must be at least 2:');
-        disp('- 1st argument is a structure array including 3 filenames, each containing a component of a velocimeter sensor;');
-        disp('- 2nd argument is an output mat filename which will inlcude the XN_Cruncher results;');
-        disp('- 3rd argument (optional) is an input txt file including all the XN_Cruncher cfg parameters.');
-        disp('  If the 3rd argument is not provided a set of default, script embedded, parameters will be used.');        
-        return;
+        error('XNSR:Cruncher:InvalidInputCount', ...
+            'XN_Cruncher accepts two to four input arguments.');
 end
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%% PARAMETERS YOU CAN CHANGE START HERE %%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%% GEMETRIC PARAMETERS
-PARAM.GEOM.MAX_ALPHA       = 180;           % MAX AZIMUTH ANGLE, MIN = 0 BY DEFAULT
-PARAM.GEOM.MAX_THETA       = 30;            % MAX DIP ANGLE, MIN = 0 BY DEFAULT
-PARAM.GEOM.STEP_ALPHA      = 10;            % AZIMUTH ANGLE DEGREE STEPS
-PARAM.GEOM.STEP_THETA      = 2;             % DIP ANGLE DEGREE STEPS
-%
-%% SIGNAL PARAMETERS
-PARAM.SIG.FFTSIZE         = 3840;           % COMMON FFT SIZE (confortable to use for all methods)
-PARAM.SIG.T_LIM           = [0,600];        % TIME INTERVAL OF INPUT SIGNAL TO USE (TEST 600s and 900s)
-PARAM.SIG.F_LIM           = [0.2,10];       % OUTPUT SIGNAL FREQUENCY INTERVAL TO PLOT
-%
-%% PREFILTERING (BUTTEERWORTH) AND TAPERING (TUKEY WINDOW) PARAMS
-PARAM.FILT.TUKEYWINPARAM   = 0.05;         % Tapering ratio applied to main signal
-PARAM.FILT.Fn              = [0.5,20];     % band bass filter frequency limits e.g. [0.1,25];
-PARAM.FILT.Or              = 4;            % band pass filter order
-%
-%% Common Method PARAMETERS:
-PARAM.COMM.fstp = 0.01;          % OUTPUT FREQUENCY STEP (Hz)
-%
-%% KonnoOhmachi PARAMETERS:
-PARAM.KONNO.b   = 40; % b KonnoOhmachi parameter
-%
-% Triang PARAMETERS:
-PARAM.TRIANG.perc= 3; % +/-3% of signal at every fc frequency
-%
-%% SCRIPT CONTROL PARAMETERS
+validateattributes(SHOW_PLOTS,{'logical','numeric'}, ...
+    {'scalar','binary'},mfilename,'ShowPlots',4);
+SHOW_PLOTS = logical(SHOW_PLOTS);
+%% Default geometric parameters
+PARAM.GEOM.MAX_ALPHA       = 180;           % Maximum azimuth (degrees).
+PARAM.GEOM.MAX_THETA       = 30;            % Maximum dip (degrees).
+PARAM.GEOM.STEP_ALPHA      = 10;            % Azimuth increment (degrees).
+PARAM.GEOM.STEP_THETA      = 2;             % Dip increment (degrees).
+%% Default signal parameters
+PARAM.SIG.FFTSIZE         = 3840;           % FFT length used by both methods.
+PARAM.SIG.T_LIM           = [0,600];        % Input time interval (seconds).
+PARAM.SIG.F_LIM           = [0.2,10];       % Output frequency interval (Hz).
+%% Default Butterworth prefilter and Tukey taper parameters
+PARAM.FILT.TUKEYWINPARAM   = 0.05;         % Tukey taper ratio.
+PARAM.FILT.Fn              = [0.5,20];     % Band-pass cutoff frequencies (Hz).
+PARAM.FILT.Or              = 4;            % Band-pass filter order.
+%% Parameters shared by both smoothing methods
+PARAM.COMM.fstp = 0.01;          % Output frequency increment (Hz).
+%% Konno-Ohmachi parameters
+PARAM.KONNO.b   = 40;            % Konno-Ohmachi bandwidth coefficient.
+%% Triangular smoothing parameters
+PARAM.TRIANG.perc= 3;            % Half-width as a percentage of each center.
+%% Processing controls
 PARAM.SCRIPT.DOTAPERING          = 'N';
 PARAM.SCRIPT.DOFILTERING         = 'Y';
 PARAM.SCRIPT.DODETRENDING        = 'Y';
-PARAM.SCRIPT.MAINPLOTTYPE        = '3D'; % Available values are 3D and 2D
-PARAM.SCRIPT.SMOOTHING_WIN_TYPE  = 'T';  % T for Triangular windows, K for Konnomachi method
-PARAM.SCRIPT.CALCULUS_MODE       = 'M';  % Available methods are 'V' for Full Vectorization, or 'M' for partial loop and vectorization
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%% PARAMETERS YOU CAN CHANGE END HERE %%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+PARAM.SCRIPT.MAINPLOTTYPE        = '3D'; % Supported values: 2D and 3D.
+PARAM.SCRIPT.SMOOTHING_WIN_TYPE  = 'T';  % T: triangular; K: Konno-Ohmachi.
+PARAM.SCRIPT.CALCULUS_MODE       = 'M';  % M: page-wise; V: fully vectorized.
 if ~isempty(CFG_FILE)
-    OUT=readcfg(CFG_FILE); % if a CFG file is provided the PARM struct is built using the file
+    OUT=readcfg(CFG_FILE); % Replace defaults with the supplied configuration.
     PARAM=OUT.PARAM;
 end
-PARAM.COMM.fc   = (PARAM.SIG.F_LIM(1):PARAM.COMM.fstp:PARAM.SIG.F_LIM(2))'; % OUTPUT FREQUENCY VECTOR
+PARAM.COMM.fc   = (PARAM.SIG.F_LIM(1):PARAM.COMM.fstp:PARAM.SIG.F_LIM(2))'; % Output frequencies.
 
-%
-%%
+%% Load input data
 if length(FILELIST) == 1
     CURRENTFILE = [DATAPATH,SLASH_TYPE,FILELIST{1}];
     dataSig=readtracks(CURRENTFILE);
@@ -102,7 +84,7 @@ if length(FILELIST) == 1
         Y           = dataSig.data(:,1);
         X           = dataSig.data(:,2);
         Z           = dataSig.data(:,3);
-        PARAM.SIG.F = dataSig.samFreq;  % DATALOGGING FREQUENCY
+        PARAM.SIG.F = dataSig.samFreq;  % Sampling frequency.
     end
 else
     for i = 1:length(FILELIST)
@@ -111,41 +93,38 @@ else
         switch i
             case 1
                 Y           = dataSig.data;
-                PARAM.SIG.F = dataSig.samFreq; % DATALOGGING FREQUENCY
+                PARAM.SIG.F = dataSig.samFreq; % Sampling frequency.
             case 2
                 X           = dataSig.data;
-                PARAM.SIG.F = dataSig.samFreq; % DATALOGGING FREQUENCY
+                PARAM.SIG.F = dataSig.samFreq; % Sampling frequency.
             case 3
                 Z           = dataSig.data;
-                PARAM.SIG.F = dataSig.samFreq; % DATALOGGING FREQUENCY
+                PARAM.SIG.F = dataSig.samFreq; % Sampling frequency.
             otherwise
                 disp ('FILE NOT FOUND')
                 return
         end
     end
 end
-%
-% TIME VECTOR
+% Build the time vector and apply the configured time limits.
 T = (0:1/PARAM.SIG.F:(1/PARAM.SIG.F)*(length(X)-1));
 I = find((T<=PARAM.SIG.T_LIM(2)) & (T>=PARAM.SIG.T_LIM(1)));
 T = T(I)';
 X = X(I)';
 Y = Y(I)';
 Z = Z(I)';
-%
-%% PRELIMINAR FILTERING (BUTTERWORTH)
+%% Optional Butterworth prefilter
 switch PARAM.SCRIPT.DOFILTERING
     case {'Y','y','Yes','yes','YES'}
-        Wcs     =   2*pi*PARAM.SIG.F;   % Carrier beat frequency
-        Wcn     =   2*pi*PARAM.FILT.Fn/(Wcs/2);    % Normalized cutoff frequency.
-        [B,A]   =   butter(PARAM.FILT.Or,Wcn);     % Band Pass Butterworth Filter
-        X       =   filtfilt(B,A,X);    % Filtered signal (zero-phase digital filtering)
-        Y       =   filtfilt(B,A,Y);    % Filtered signal (zero-phase digital filtering)
-        Z       =   filtfilt(B,A,Z);    % Filtered signal (zero-phase digital filtering)
+        Wcs     =   2*pi*PARAM.SIG.F;   % Sampling angular frequency.
+        Wcn     =   2*pi*PARAM.FILT.Fn/(Wcs/2); % Normalized cutoff frequencies.
+        [B,A]   =   butter(PARAM.FILT.Or,Wcn);  % Butterworth coefficients.
+        X       =   filtfilt(B,A,X);    % Zero-phase filtered X component.
+        Y       =   filtfilt(B,A,Y);    % Zero-phase filtered Y component.
+        Z       =   filtfilt(B,A,Z);    % Zero-phase filtered Z component.
     otherwise
 end
-%
-%% SIGNAL TAPERING
+%% Optional signal taper
 switch PARAM.SCRIPT.DOTAPERING
     case {'Y','y','Yes','yes','YES'}
         TAPESIZE = length(X);
@@ -154,8 +133,7 @@ switch PARAM.SCRIPT.DOTAPERING
         Z=Z.*(tukeywin(TAPESIZE,PARAM.FILT.TUKEYWINPARAM))';
     otherwise
 end
-%
-%% SIGNAL DETRENDING
+%% Optional signal detrending
 switch PARAM.SCRIPT.DODETRENDING
     case {'Y','y','Yes','yes','YES'}
         X = detrend(X,'constant');
@@ -163,103 +141,93 @@ switch PARAM.SCRIPT.DODETRENDING
         Z = detrend(Z,'constant');
     otherwise
 end
-%
-%% PRELIMINAR SIGNAL PLOTS
-figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
-%
-% TIME DOMAIN PLOTS
-subplot(3,2,1);
-H(1) = plot(T,X,'r');
-title('TIME DOMAIN');
-xlabel('T(s)');
-ylabel('X(V)');
-grid on;
-axis tight
-subplot(3,2,3);
-H(3) = plot(T,Y,'b');
-xlabel('T(s)');
-ylabel('Y(V)');
-grid on;
-axis tight
-subplot(3,2,5);
-H(5) = plot(T,Z,'m');
-xlabel('T(s)');
-ylabel('Z(V)');
-grid on;
-axis tight
-%
-% FREQUENCY DOMAIN PLOTS
-XFFT = fft2ft(abs(fft(X)),PARAM.SIG.F);
-YFFT = fft2ft(abs(fft(Y)),PARAM.SIG.F);
-ZFFT = fft2ft(abs(fft(Z)),PARAM.SIG.F);
-subplot(3,2,2);
-H(2) = semilogx(XFFT(:,1),20*log10(XFFT(:,2)),'r');
-title('FREQUENCY DOMAIN');
-xlabel('f(Hz)');
-ylabel('X(dB)');
-grid on;
-axis tight
-subplot(3,2,4);
-H(4) = semilogx(YFFT(:,1),20*log10(YFFT(:,2)),'b');
-xlabel('f(Hz)');
-ylabel('Y(dB)');
-grid on;
-axis tight
-subplot(3,2,6);
-H(6) = semilogx(ZFFT(:,1),20*log10(ZFFT(:,2)),'m');
-xlabel('f(Hz)');
-ylabel('Z(dB)');
-grid on;
-axis tight
-%
-%% SIGNAL SPLIT
+%% Optional time- and frequency-domain previews
+if SHOW_PLOTS
+    scrsz = get(0,'ScreenSize');
+    figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
+    % Time-domain plots.
+    subplot(3,2,1);
+    plot(T,X,'r');
+    title('TIME DOMAIN');
+    xlabel('T(s)');
+    ylabel('X(V)');
+    grid on;
+    axis tight
+    subplot(3,2,3);
+    plot(T,Y,'b');
+    xlabel('T(s)');
+    ylabel('Y(V)');
+    grid on;
+    axis tight
+    subplot(3,2,5);
+    plot(T,Z,'m');
+    xlabel('T(s)');
+    ylabel('Z(V)');
+    grid on;
+    axis tight
+    % Frequency-domain plots.
+    XFFT = fft2ft(abs(fft(X)),PARAM.SIG.F);
+    YFFT = fft2ft(abs(fft(Y)),PARAM.SIG.F);
+    ZFFT = fft2ft(abs(fft(Z)),PARAM.SIG.F);
+    subplot(3,2,2);
+    semilogx(XFFT(:,1),20*log10(XFFT(:,2)),'r');
+    title('FREQUENCY DOMAIN');
+    xlabel('f(Hz)');
+    ylabel('X(dB)');
+    grid on;
+    axis tight
+    subplot(3,2,4);
+    semilogx(YFFT(:,1),20*log10(YFFT(:,2)),'b');
+    xlabel('f(Hz)');
+    ylabel('Y(dB)');
+    grid on;
+    axis tight
+    subplot(3,2,6);
+    semilogx(ZFFT(:,1),20*log10(ZFFT(:,2)),'m');
+    xlabel('f(Hz)');
+    ylabel('Z(dB)');
+    grid on;
+    axis tight
+end
+%% Split signals into overlapping windows
 disp('SIGNAL SPLIT');
 tic;
 X_SPLIT = detrend(WinSplit(X,PARAM.SIG.FFTSIZE,PARAM.SIG.FFTSIZE*0.1));
 Y_SPLIT = detrend(WinSplit(Y,PARAM.SIG.FFTSIZE,PARAM.SIG.FFTSIZE*0.1));
 Z_SPLIT = detrend(WinSplit(Z,PARAM.SIG.FFTSIZE,PARAM.SIG.FFTSIZE*0.1));
 toc
-%
-%% FFT MANIUPULATION
-% 1) WORKING INSIDE THE FFT DOMAIN
-% 2) RECOVERING THE FFT HALF LEFT SIDE
-disp('FFT + FFT2FT');
+%% Compute one-sided spectra
+disp('FFT + ONE-SIDED SPECTRUM');
 tic;
-FT_X    = fft2ft(fft(X_SPLIT),PARAM.SIG.F);
-FT_Y    = fft2ft(fft(Y_SPLIT),PARAM.SIG.F);
-FT_Z    = fft2ft(fft(Z_SPLIT),PARAM.SIG.F);
+[FT_X,F_VECT] = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(X_SPLIT),PARAM.SIG.F,1);
+FT_Y = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(Y_SPLIT),PARAM.SIG.F,1);
+FT_Z = spectral.oneSidedAmplitudeFromFFT( ...
+    fft(Z_SPLIT),PARAM.SIG.F,1);
 toc
-%
-%% REDUCING THE DATASET ACCORDING THE FREQUENCY LIMITS
+%% Restrict spectra to the configured frequency limits
 disp('DASET REDUCING BY FREQ. LIMS');
 tic;
-F_VECT      = fft2ft(fft(X_SPLIT(:,1)),PARAM.SIG.F);
-F_VECT      = F_VECT(:,1);
 I           = find((F_VECT>=PARAM.SIG.F_LIM(1)) & (F_VECT<=PARAM.SIG.F_LIM(2)));
 F_VECT      = F_VECT(I);
-FT_X        = FT_X(I,:,2);
-FT_Y        = FT_Y(I,:,2);
-FT_Z        = FT_Z(I,:,2);
+FT_X        = FT_X(I,:);
+FT_Y        = FT_Y(I,:);
+FT_Z        = FT_Z(I,:);
 toc
-%
-%%
-%%%%%%%%%%%%%%% MANIPULATION MATRIX STARTS HERE %%%%%%%%%%%%%%%
+%% Rotate spectra over the azimuth/dip grid
 disp('DATASET ROTATIONS');
 tic;
-%
-% AZIMUTH ANGLE
+% Azimuth angles.
 ALPHA = 0:PARAM.GEOM.STEP_ALPHA:PARAM.GEOM.MAX_ALPHA;
 ALPHA = ALPHA/180*pi;
-%
-% DIP ANGLE
+% Dip angles.
 THETA = 0:PARAM.GEOM.STEP_THETA:PARAM.GEOM.MAX_THETA;
 THETA = THETA/180*pi;
-%
-% BUILDING ANGLES MATRIX
+% Build paired azimuth/dip vectors.
 ALPHA_VEC   = repmat(ALPHA',length(THETA),1);
 THETA_VEC   = reshape(repmat(THETA',1,length(ALPHA))',length(ALPHA_VEC),1);
-%
-% preallocation for speeding up
+% Preallocate rotated spectra.
 FT_X_ROT   = zeros([size(FT_X),size(ALPHA_VEC,1)]);
 FT_Y_ROT   = FT_X_ROT;
 FT_Z_ROT   = FT_X_ROT;
@@ -269,124 +237,92 @@ for i=1:size(ALPHA_VEC,1)
     FT_Z_ROT(:,:,i)   = -sin(THETA_VEC(i))*cos(ALPHA_VEC(i))*FT_X + sin(ALPHA_VEC(i))*sin(THETA_VEC(i))*FT_Y + cos(THETA_VEC(i))*FT_Z;
 end
 toc
-%
-% HORIZONTAL COMPONENTS MEAN
+% Combine the two rotated horizontal components.
 disp('HORIZONTAL COMPONENTS MEAN');
 tic;
 FT_XY_ROT   = sqrt(abs(FT_X_ROT).*abs(FT_Y_ROT));
 FT_Z_ROT    = abs(FT_Z_ROT);
-%
 switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
     case 'K'
-        % KONNOOMACHI FILTERING
+        % Konno-Ohmachi smoothing.
         disp('WORKING WITH KONNOOHMACHI');
+        % The frequency grid and b coefficient are constant throughout the
+        % smoothing stage. Build and normalize the window once, then reuse
+        % it in every serial or PARFOR operation.
+        KONNO_FC = PARAM.COMM.fc;
+        KONNO_B = PARAM.KONNO.b;
+        KONNO_WEIGHTS = KonnoOhmachiWeights(F_VECT,KONNO_FC,KONNO_B);
+        NUM_SPECTRA = size(FT_XY_ROT,2);
         switch upper(PARAM.SCRIPT.CALCULUS_MODE)
             case {'MIXED','M'}
-                %
-                % preallocation for speeding up
+                % Preallocate page-wise results.
                 XY_SPECTRUM =   zeros(size(PARAM.COMM.fc,1),size(FT_XY_ROT,2),size(FT_XY_ROT,3));
                 Z_SPECTRUM  =   XY_SPECTRUM;
-                %
-                % SLOWER FOR A SMALL AMMOUNT OF MEMORY USAGE BUT
-                % FASTER WITH BIG DASASETS
+                % Page-wise parallel processing limits peak memory use.
                 tic
-                size(FT_XY_ROT,3)
                 parfor i = 1:size(FT_XY_ROT,3)
-                    XY_SPECTRUM(:,:,i) = KonnoOhmachiFilter(FT_XY_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
-                    Z_SPECTRUM(:,:,i)  = KonnoOhmachiFilter(FT_Z_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
+                    FILTERED = KonnoOhmachiFilter( ...
+                        [FT_XY_ROT(:,:,i),FT_Z_ROT(:,:,i)], ...
+                        F_VECT,KONNO_FC,KONNO_B,KONNO_WEIGHTS);
+                    XY_SPECTRUM(:,:,i) = FILTERED(:,1:NUM_SPECTRA);
+                    Z_SPECTRUM(:,:,i)  = FILTERED(:,NUM_SPECTRA+1:end);
                 end
                 toc
             case {'VECTORIZATION','V'}
-                %
-                % SLOWER FOR BIG AMMOUNT OF MEMORY USAGE BUT
-                % FASTER WITH SMALL DASASETS
-                XY_SPECTRUM = KonnoOhmachiFilter(FT_XY_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
-                Z_SPECTRUM   = KonnoOhmachiFilter(FT_Z_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.KONNO.b);
+                % Full vectorization is suitable for smaller datasets.
+                FILTERED = KonnoOhmachiFilter( ...
+                    cat(2,FT_XY_ROT,FT_Z_ROT), ...
+                    F_VECT,KONNO_FC,KONNO_B,KONNO_WEIGHTS);
+                XY_SPECTRUM = FILTERED(:,1:NUM_SPECTRA,:);
+                Z_SPECTRUM  = FILTERED(:,NUM_SPECTRA+1:end,:);
                 XY_SPECTRUM = squeeze(XY_SPECTRUM);
                 Z_SPECTRUM  = squeeze(Z_SPECTRUM);
         end
     case 'T'
-        % TRIANGULAR FILTERING
+        % Triangular smoothing.
         disp('WORKING WITH TRIANGULAR SMOOTHING');
+        TRIANG_FC = PARAM.COMM.fc;
+        TRIANG_PERCENT = PARAM.TRIANG.perc;
+        TRIANG_WEIGHTS = triangFilterWeights( ...
+            F_VECT,TRIANG_FC,TRIANG_PERCENT);
+        NUM_SPECTRA = size(FT_XY_ROT,2);
         switch upper(PARAM.SCRIPT.CALCULUS_MODE)
             case {'MIXED','M'}
-                %
-                % preallocation for speeding up
+                % Preallocate page-wise results.
                 XY_SPECTRUM =   zeros(size(PARAM.COMM.fc,1),size(FT_XY_ROT,2),size(FT_XY_ROT,3));
                 Z_SPECTRUM  =   XY_SPECTRUM;
-                %
-                % SLOWER FOR A SMALL AMMOUNT OF MEMORY USAGE BUT
-                % FASTER WITH BIG DASASETS
+                % Page-wise parallel processing limits peak memory use.
                 tic
                 parfor i = 1:size(FT_XY_ROT,3)
-                    XY_SPECTRUM(:,:,i) = triangFilter(FT_XY_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
-                    Z_SPECTRUM(:,:,i)  = triangFilter(FT_Z_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
+                    FILTERED = triangFilter( ...
+                        [FT_XY_ROT(:,:,i),FT_Z_ROT(:,:,i)], ...
+                        F_VECT,TRIANG_FC,TRIANG_PERCENT,TRIANG_WEIGHTS);
+                    XY_SPECTRUM(:,:,i) = FILTERED(:,1:NUM_SPECTRA);
+                    Z_SPECTRUM(:,:,i) = FILTERED(:,NUM_SPECTRA+1:end);
                 end
                 toc
             case {'VECTORIZATION','V'}
-                %
-                % SLOWER FOR BIG AMMOUNT OF MEMORY USAGE BUT
-                % FASTER WITH SMALL DASASETS
-                XY_SPECTRUM = triangFilter(FT_XY_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
-                Z_SPECTRUM  = triangFilter(FT_Z_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
+                % Full vectorization is suitable for smaller datasets.
+                XY_SPECTRUM = triangFilter( ...
+                    FT_XY_ROT,F_VECT,TRIANG_FC, ...
+                    TRIANG_PERCENT,TRIANG_WEIGHTS);
+                Z_SPECTRUM = triangFilter( ...
+                    FT_Z_ROT,F_VECT,TRIANG_FC, ...
+                    TRIANG_PERCENT,TRIANG_WEIGHTS);
                 XY_SPECTRUM = squeeze(XY_SPECTRUM);
                 Z_SPECTRUM  = squeeze(Z_SPECTRUM);
         end
 
 end
-%
-% H/V ratio
+% Compute mean H/V ratios and their standard deviations.
 HV_RATIO                = XY_SPECTRUM./Z_SPECTRUM;
 HV_STD                  = std(HV_RATIO,1,2);
 HV_RATIO                = mean(HV_RATIO,2);
-%
-% RECOVERING MAX MODULE FREQUENCY RESPONSES ABD THEIR FREQUENCY VALUES
+% Locate the maximum H/V ratio and its frequency for each orientation.
 [MAX_HV_RATIO,I]        = max(HV_RATIO,[],1);
 MAX_HV_F                = PARAM.COMM.fc(I);
 XN_DATA=[];
-%%%%%%%%%%%%%%% MANIPULATION MATRIX STOPS HERE %%%%%%%%%%%%%%%
-%
-%% PLOTS
-figure('Position',[1 scrsz(4)/2 scrsz(3)*0.365 scrsz(4)/2])
-SUB_PLT2=subplot(1,2,2);
-plot(1:10,1:10);
-MINF    = min(MAX_HV_F);
-MAXF    = max(MAX_HV_F);
-STEPF   = (MAXF-MINF)/10;
-ICOLOR  = MAX_HV_F;
-IDIM    = exp(6*(MAX_HV_RATIO/max(MAX_HV_RATIO))); % max H/V modulus proportional to circle radius
-I       = find(IDIM==0);
-IDIM(I)=1;
-axes('position', [0.05,0.1,0.4,0.8]);
-switch PARAM.SCRIPT.MAINPLOTTYPE
-    case {'2D','2'}
-        scatter(180/pi*ALPHA_VEC,180/pi*THETA_VEC,IDIM(:),ICOLOR(:),'filled');
-        axis ij;
-        xlabel('AZIMUTH ANGLE [degrees]')
-        ylabel('DIP ANGLE [degrees]')
-        axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5]);
-        grid on;
-    case {'3D','3'}
-        H=stem3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO,'color','k');
-        set(H,'Marker','none');
-        hold on;
-        scatter3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO(:),IDIM(:),ICOLOR','filled');
-        xlabel('AZIMUTH ANGLE [degrees]')
-        ylabel('DIP ANGLE [degrees]')
-        zlabel('X/N RATIO');
-        axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5,0,10*mean(MAX_HV_RATIO)]);
-        grid on;
-end
-title('X/N Method');
-%
-% COLORBAR X FREQUENCY
-YTICK_VEC = 0:STEPF:MAXF;
-YTICK_LAB = (cellstr(num2str(YTICK_VEC')))';
-YTICK_VEC = (YTICK_VEC/MAXF)*256;
-H=colorbar;
-title(H,'f[Hz]');
-%
-% WORKING WITH SELECTIONS
+% Assemble the output structure.
 XN_DATA.HV_RATIO    =   HV_RATIO;
 XN_DATA.HV_RATIO_Fc =   PARAM.COMM.fc;
 XN_DATA.HV_STD      =   HV_STD;
@@ -394,43 +330,67 @@ XN_DATA.MAX_HV_RATIO=   MAX_HV_RATIO;
 XN_DATA.MAX_HV_F    =   MAX_HV_F;
 XN_DATA.ALPHA_VEC   =   ALPHA_VEC;
 XN_DATA.THETA_VEC   =   THETA_VEC;
-XN_DATA.SUB_PLT2    =   SUB_PLT2;
+XN_DATA.SUB_PLT2    =   [];
 XN_DATA.TXYZ        =   [T,X',Y',Z'];
 XN_DATA.PARAM       =   PARAM;
-%
+%% OPTIONAL INTERACTIVE PLOT
+if SHOW_PLOTS
+    scrsz = get(0,'ScreenSize');
+    figure('Position',[1 scrsz(4)/2 scrsz(3)*0.365 scrsz(4)/2])
+    SUB_PLT2=subplot(1,2,2);
+    plot(1:10,1:10);
+    ICOLOR  = MAX_HV_F;
+    IDIM    = exp(6*(MAX_HV_RATIO/max(MAX_HV_RATIO))); % Scale markers by peak H/V.
+    I       = find(IDIM==0);
+    IDIM(I)=1;
+    axes('position', [0.05,0.1,0.4,0.8]);
+    switch PARAM.SCRIPT.MAINPLOTTYPE
+        case {'2D','2'}
+            scatter(180/pi*ALPHA_VEC,180/pi*THETA_VEC,IDIM(:),ICOLOR(:),'filled');
+            axis ij;
+            xlabel('AZIMUTH ANGLE [degrees]')
+            ylabel('DIP ANGLE [degrees]')
+            axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5]);
+            grid on;
+        case {'3D','3'}
+            H=stem3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO,'color','k');
+            set(H,'Marker','none');
+            hold on;
+            scatter3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO(:),IDIM(:),ICOLOR','filled');
+            xlabel('AZIMUTH ANGLE [degrees]')
+            ylabel('DIP ANGLE [degrees]')
+            zlabel('X/N RATIO');
+            axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5,0,10*mean(MAX_HV_RATIO)]);
+            grid on;
+    end
+    title('X/N Method');
+    H=colorbar;
+    title(H,'f[Hz]');
+    XN_DATA.SUB_PLT2 = SUB_PLT2;
+    % Store the dataset in the axes for interactive data-cursor callbacks.
+    set(gca,'UserData',XN_DATA);
+    % Enable interactive ratio inspection.
+    POINTEROBJ = datacursormode;
+    set (POINTEROBJ,'Enable','on',...
+        'DisplayStyle','window',...
+        'UpdateFcn',@doratio);
+end
 %% SAVE THE DATASET
 save(FILE_MATLAB_OUT,'XN_DATA');
-%
-% SAVING THE MAIN DATASET INFOS INSIDE THE FIGURE HANDLE
-set(gca,'UserData',XN_DATA);
-%
-% BUILDING THE CURSOR MODE FEATURE
-POINTEROBJ = datacursormode;
-set (POINTEROBJ,'Enable','on',...
-    'DisplayStyle','window',...
-    'UpdateFcn',@doratio);
-%
-%% FUNCTIONS
-%
-% FUNCTION doratio FOR "ON THE FLY" SPECTRAL RATIO CALCULUS
-    function output_txt = doratio(obj,event_obj)
-        % Display the position of the data cursor
-        % obj          Currently not used (empty)
-        % event_obj    Handle to event object
-        % RATIO        Works with the H/V ratios.
+%% Interactive data-cursor callback
+    function output_txt = doratio(~,event_obj)
+        % Display the selected orientation and its H/V spectrum.
         XN_DATA = get(gca,'UserData');
         pos = get(event_obj,'Position');
-        output_txt = {['AZIMUTH ANGLE: ',num2str(pos(1),4),'°'],...
-            ['DIP ANGLE: ',num2str(pos(2),4),'°']};
-        %
-        % RECOVER SELECTED ALPHA and THETA
+        output_txt = {['AZIMUTH ANGLE: ',num2str(pos(1),4),'Â°'],...
+            ['DIP ANGLE: ',num2str(pos(2),4),'Â°']};
+        % Find the selected azimuth/dip pair.
         I1 = find(round(XN_DATA.ALPHA_VEC/pi*180)==round(pos(1)));
         I2 = find(round(XN_DATA.THETA_VEC/pi*180)==round(pos(2)));
         I = intersect(I1,I2);
         THETA   =   XN_DATA.THETA_VEC(I)/pi*180;
         ALPHA   =   XN_DATA.ALPHA_VEC(I)/pi*180;
-        %
-        % WORKING WITH DATA CALCULATED BY MATRIX MANIPULATIONS
+        % Plot the stored mean ratio and standard-deviation envelope.
         output_txt{end+1} = ['X/N MAX RATIO:           ',num2str(XN_DATA.MAX_HV_RATIO(I),4)];
         output_txt{end+1} = ['X/N MAX RATIO freq:(Hz): ',num2str(XN_DATA.MAX_HV_F(I),4)];
         subplot(XN_DATA.SUB_PLT2);
@@ -439,7 +399,7 @@ set (POINTEROBJ,'Enable','on',...
         hold on;
         PLT_STDP=semilogx(XN_DATA.HV_RATIO_Fc,...
             XN_DATA.HV_RATIO(:,I)+XN_DATA.HV_STD(:,I),'r');
-        PLT_STDM=semilogx(XN_DATA.HV_RATIO_Fc,...
+        semilogx(XN_DATA.HV_RATIO_Fc,...
             XN_DATA.HV_RATIO(:,I)-XN_DATA.HV_STD(:,I),'r');
         semilogx(XN_DATA.MAX_HV_F(I),...
             XN_DATA.MAX_HV_RATIO(I),...
