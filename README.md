@@ -94,6 +94,7 @@ The XNSR paths should be listed first. Regression tests are available in:
 
 ```matlab
 run('Software/test_fft2ft.m')
+run('Software/test_readcfg.m')
 run('Software/test_triangFilter.m')
 run('Software/test_hv_konno.m')
 run('Software/test_KonnoOhmachiFilter.m')
