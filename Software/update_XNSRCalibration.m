@@ -35,7 +35,7 @@ dataPath = fullfile(repositoryPath,'DataIn');
 switch smoothingMethod
     case 'Triang'
         outputFamily = 'Triang';
-        configName = 'XN_Cruncher.cfg';
+        configName = 'XN_Cruncher_Triang.cfg';
         expectedSmoothingType = 'T';
     case 'KonnoOhmachi'
         outputFamily = 'KonnoOhmachi';

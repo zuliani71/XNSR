@@ -137,9 +137,9 @@ update_XNSRCalibration("CA04","KonnoOhmachi")
 ```
 
 `update_XNSRCalibration` always delegates the scientific calculation to
-`XN_Cruncher`. It uses `Cfg/XN_Cruncher.cfg` for triangular smoothing and
-`Cfg/XN_Cruncher_Konno.cfg` for Konno–Ohmachi smoothing, validates the
-result, and writes it to `DataCalib/Triang` or
+`XN_Cruncher`. It uses `Cfg/XN_Cruncher_Triang.cfg` for triangular
+smoothing and `Cfg/XN_Cruncher_Konno.cfg` for Konno–Ohmachi smoothing,
+validates the result, and writes it to `DataCalib/Triang` or
 `DataCalib/KonnoOhmachi`. This maintenance function intentionally replaces
 the official reference and must not be used as a regression test. The old
 `generate_KonnoOhmachiCalibration` entry point is retained only as a
