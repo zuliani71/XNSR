@@ -55,7 +55,22 @@ The XNSR distribution is made of the following dirs and files:
 
 ## First run:
 - clone the GITHUB XNSR repo on your computer;
-- run matlab and add to your matlabpath the XNSR **_Software_** dir;
+- run MATLAB and add the cloned XNSR **_Software_** directory to the
+  MATLAB path. The repository can be located anywhere and does not need
+  to be the current MATLAB folder:
+
+```matlab
+xnsrRoot = '/your/local/path/to/XNSR';
+addpath(fullfile(xnsrRoot,'Software'),'-begin')
+rehash path
+```
+
+- verify the portable installation from any current folder with:
+
+```matlab
+test_XNSR_All
+```
+
 - do not add external copies of `fft2ft` or `ft2fft`: XNSR includes a
   versioned copy of the common `+spectral` library inside **_Software_**.
   Adding only **_Software_** makes both the legacy entry points and the
@@ -90,17 +105,19 @@ which ft2fft -all
 which spectral.halfSpectrum
 ```
 
-The XNSR paths should be listed first. Regression tests are available in:
+The XNSR paths should be listed first. Once `Software` is on the MATLAB
+path, regression tests can be called by name from any current folder:
 
 ```matlab
-run('Software/test_fft2ft.m')
-run('Software/test_readcfg.m')
-run('Software/test_triangFilter.m')
-run('Software/test_hv_konno.m')
-run('Software/test_KonnoOhmachiFilter.m')
-run('Software/test_XN_plotmatdata.m')
-run('Software/test_XN_Cruncher_CA04_Triang.m')
-run('Software/test_XN_Cruncher_CA04_Konno.m')
+test_fft2ft
+test_readcfg
+test_triangFilter
+test_hv_konno
+test_KonnoOhmachiFilter
+test_XN_plotmatdata
+test_XN_Cruncher_CA04_Triang
+test_XN_Cruncher_CA04_Konno
+test_XNSR_All
 ```
 
 The 18 scripts named `test_XN_Cruncher_<dataset>_<method>.m` are
@@ -139,9 +156,9 @@ and representation can be selected independently:
 ```matlab
 XN_plotmatdata()
 XN_plotmatdata("3D")
-XN_plotmatdata(fullfile(pwd,"DataCalib","Triang"))
-XN_plotmatdata(fullfile(pwd,"DataCalib","KonnoOhmachi"),"3D")
-XN_plotmatdata(fullfile(pwd,"DataCalib","Triang","CA04.mat"),"2D")
+XN_plotmatdata(fullfile(xnsrRoot,"DataCalib","Triang"))
+XN_plotmatdata(fullfile(xnsrRoot,"DataCalib","KonnoOhmachi"),"3D")
+XN_plotmatdata(fullfile(xnsrRoot,"DataCalib","Triang","CA04.mat"),"2D")
 ```
 
 Passing a MAT filename bypasses the selection dialog. Cancelling the
