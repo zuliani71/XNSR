@@ -10,13 +10,14 @@ function XN_DATA=XN_Cruncher(varargin)
 % Modified by D. Zuliani 2013/09/20
 % Modified by D. Zuliani 2016/02/02
 % Modified by D. Zuliani 2025/04/12
+% XN_CRUNCHER(FILELIST,OUTPUTFILE,CFGFILE,SHOWPLOTS) controls whether the
+% interactive result figure is created. SHOWPLOTS defaults to true.
 %
 % 1st TIME REMEBER TO OPEN THE MATLABPOOL
 % use the command: matlabpool open
 %
 %% Initial settings
 format long g;
-scrsz = get(0,'ScreenSize');
 %
 % Setting SLASH for computer dependent PATHS
 if ispc
@@ -31,18 +32,24 @@ switch nargin
         FILELIST            = varargin{1};
         FILE_MATLAB_OUT     = varargin{2};
         CFG_FILE            = [];
+        SHOW_PLOTS          = true;
     case 3
         FILELIST            = varargin{1};
         FILE_MATLAB_OUT     = varargin{2};
         CFG_FILE            = varargin{3};
+        SHOW_PLOTS          = true;
+    case 4
+        FILELIST            = varargin{1};
+        FILE_MATLAB_OUT     = varargin{2};
+        CFG_FILE            = varargin{3};
+        SHOW_PLOTS          = varargin{4};
     otherwise
-        disp('number of input arguments must be at least 2:');
-        disp('- 1st argument is a structure array including 3 filenames, each containing a component of a velocimeter sensor;');
-        disp('- 2nd argument is an output mat filename which will inlcude the XN_Cruncher results;');
-        disp('- 3rd argument (optional) is an input txt file including all the XN_Cruncher cfg parameters.');
-        disp('  If the 3rd argument is not provided a set of default, script embedded, parameters will be used.');        
-        return;
+        error('XNSR:Cruncher:InvalidInputCount', ...
+            'XN_Cruncher accepts two to four input arguments.');
 end
+validateattributes(SHOW_PLOTS,{'logical','numeric'}, ...
+    {'scalar','binary'},mfilename,'ShowPlots',4);
+SHOW_PLOTS = logical(SHOW_PLOTS);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%% PARAMETERS YOU CAN CHANGE START HERE %%%%%%%
@@ -165,52 +172,55 @@ switch PARAM.SCRIPT.DODETRENDING
 end
 %
 %% PRELIMINAR SIGNAL PLOTS
-figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
-%
-% TIME DOMAIN PLOTS
-subplot(3,2,1);
-H(1) = plot(T,X,'r');
-title('TIME DOMAIN');
-xlabel('T(s)');
-ylabel('X(V)');
-grid on;
-axis tight
-subplot(3,2,3);
-H(3) = plot(T,Y,'b');
-xlabel('T(s)');
-ylabel('Y(V)');
-grid on;
-axis tight
-subplot(3,2,5);
-H(5) = plot(T,Z,'m');
-xlabel('T(s)');
-ylabel('Z(V)');
-grid on;
-axis tight
-%
-% FREQUENCY DOMAIN PLOTS
-XFFT = fft2ft(abs(fft(X)),PARAM.SIG.F);
-YFFT = fft2ft(abs(fft(Y)),PARAM.SIG.F);
-ZFFT = fft2ft(abs(fft(Z)),PARAM.SIG.F);
-subplot(3,2,2);
-H(2) = semilogx(XFFT(:,1),20*log10(XFFT(:,2)),'r');
-title('FREQUENCY DOMAIN');
-xlabel('f(Hz)');
-ylabel('X(dB)');
-grid on;
-axis tight
-subplot(3,2,4);
-H(4) = semilogx(YFFT(:,1),20*log10(YFFT(:,2)),'b');
-xlabel('f(Hz)');
-ylabel('Y(dB)');
-grid on;
-axis tight
-subplot(3,2,6);
-H(6) = semilogx(ZFFT(:,1),20*log10(ZFFT(:,2)),'m');
-xlabel('f(Hz)');
-ylabel('Z(dB)');
-grid on;
-axis tight
+if SHOW_PLOTS
+    scrsz = get(0,'ScreenSize');
+    figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
+    %
+    % TIME DOMAIN PLOTS
+    subplot(3,2,1);
+    plot(T,X,'r');
+    title('TIME DOMAIN');
+    xlabel('T(s)');
+    ylabel('X(V)');
+    grid on;
+    axis tight
+    subplot(3,2,3);
+    plot(T,Y,'b');
+    xlabel('T(s)');
+    ylabel('Y(V)');
+    grid on;
+    axis tight
+    subplot(3,2,5);
+    plot(T,Z,'m');
+    xlabel('T(s)');
+    ylabel('Z(V)');
+    grid on;
+    axis tight
+    %
+    % FREQUENCY DOMAIN PLOTS
+    XFFT = fft2ft(abs(fft(X)),PARAM.SIG.F);
+    YFFT = fft2ft(abs(fft(Y)),PARAM.SIG.F);
+    ZFFT = fft2ft(abs(fft(Z)),PARAM.SIG.F);
+    subplot(3,2,2);
+    semilogx(XFFT(:,1),20*log10(XFFT(:,2)),'r');
+    title('FREQUENCY DOMAIN');
+    xlabel('f(Hz)');
+    ylabel('X(dB)');
+    grid on;
+    axis tight
+    subplot(3,2,4);
+    semilogx(YFFT(:,1),20*log10(YFFT(:,2)),'b');
+    xlabel('f(Hz)');
+    ylabel('Y(dB)');
+    grid on;
+    axis tight
+    subplot(3,2,6);
+    semilogx(ZFFT(:,1),20*log10(ZFFT(:,2)),'m');
+    xlabel('f(Hz)');
+    ylabel('Z(dB)');
+    grid on;
+    axis tight
+end
 %
 %% SIGNAL SPLIT
 disp('SIGNAL SPLIT');
@@ -359,46 +369,6 @@ MAX_HV_F                = PARAM.COMM.fc(I);
 XN_DATA=[];
 %%%%%%%%%%%%%%% MANIPULATION MATRIX STOPS HERE %%%%%%%%%%%%%%%
 %
-%% PLOTS
-figure('Position',[1 scrsz(4)/2 scrsz(3)*0.365 scrsz(4)/2])
-SUB_PLT2=subplot(1,2,2);
-plot(1:10,1:10);
-MINF    = min(MAX_HV_F);
-MAXF    = max(MAX_HV_F);
-STEPF   = (MAXF-MINF)/10;
-ICOLOR  = MAX_HV_F;
-IDIM    = exp(6*(MAX_HV_RATIO/max(MAX_HV_RATIO))); % max H/V modulus proportional to circle radius
-I       = find(IDIM==0);
-IDIM(I)=1;
-axes('position', [0.05,0.1,0.4,0.8]);
-switch PARAM.SCRIPT.MAINPLOTTYPE
-    case {'2D','2'}
-        scatter(180/pi*ALPHA_VEC,180/pi*THETA_VEC,IDIM(:),ICOLOR(:),'filled');
-        axis ij;
-        xlabel('AZIMUTH ANGLE [degrees]')
-        ylabel('DIP ANGLE [degrees]')
-        axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5]);
-        grid on;
-    case {'3D','3'}
-        H=stem3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO,'color','k');
-        set(H,'Marker','none');
-        hold on;
-        scatter3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO(:),IDIM(:),ICOLOR','filled');
-        xlabel('AZIMUTH ANGLE [degrees]')
-        ylabel('DIP ANGLE [degrees]')
-        zlabel('X/N RATIO');
-        axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5,0,10*mean(MAX_HV_RATIO)]);
-        grid on;
-end
-title('X/N Method');
-%
-% COLORBAR X FREQUENCY
-YTICK_VEC = 0:STEPF:MAXF;
-YTICK_LAB = (cellstr(num2str(YTICK_VEC')))';
-YTICK_VEC = (YTICK_VEC/MAXF)*256;
-H=colorbar;
-title(H,'f[Hz]');
-%
 % WORKING WITH SELECTIONS
 XN_DATA.HV_RATIO    =   HV_RATIO;
 XN_DATA.HV_RATIO_Fc =   PARAM.COMM.fc;
@@ -407,26 +377,62 @@ XN_DATA.MAX_HV_RATIO=   MAX_HV_RATIO;
 XN_DATA.MAX_HV_F    =   MAX_HV_F;
 XN_DATA.ALPHA_VEC   =   ALPHA_VEC;
 XN_DATA.THETA_VEC   =   THETA_VEC;
-XN_DATA.SUB_PLT2    =   SUB_PLT2;
+XN_DATA.SUB_PLT2    =   [];
 XN_DATA.TXYZ        =   [T,X',Y',Z'];
 XN_DATA.PARAM       =   PARAM;
+%
+%% OPTIONAL INTERACTIVE PLOT
+if SHOW_PLOTS
+    scrsz = get(0,'ScreenSize');
+    figure('Position',[1 scrsz(4)/2 scrsz(3)*0.365 scrsz(4)/2])
+    SUB_PLT2=subplot(1,2,2);
+    plot(1:10,1:10);
+    ICOLOR  = MAX_HV_F;
+    IDIM    = exp(6*(MAX_HV_RATIO/max(MAX_HV_RATIO))); % max H/V modulus proportional to circle radius
+    I       = find(IDIM==0);
+    IDIM(I)=1;
+    axes('position', [0.05,0.1,0.4,0.8]);
+    switch PARAM.SCRIPT.MAINPLOTTYPE
+        case {'2D','2'}
+            scatter(180/pi*ALPHA_VEC,180/pi*THETA_VEC,IDIM(:),ICOLOR(:),'filled');
+            axis ij;
+            xlabel('AZIMUTH ANGLE [degrees]')
+            ylabel('DIP ANGLE [degrees]')
+            axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5]);
+            grid on;
+        case {'3D','3'}
+            H=stem3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO,'color','k');
+            set(H,'Marker','none');
+            hold on;
+            scatter3(180/pi*ALPHA_VEC,180/pi*THETA_VEC,MAX_HV_RATIO(:),IDIM(:),ICOLOR','filled');
+            xlabel('AZIMUTH ANGLE [degrees]')
+            ylabel('DIP ANGLE [degrees]')
+            zlabel('X/N RATIO');
+            axis([-5,PARAM.GEOM.MAX_ALPHA+5,-5,PARAM.GEOM.MAX_THETA+5,0,10*mean(MAX_HV_RATIO)]);
+            grid on;
+    end
+    title('X/N Method');
+    H=colorbar;
+    title(H,'f[Hz]');
+    XN_DATA.SUB_PLT2 = SUB_PLT2;
+    %
+    % SAVING THE MAIN DATASET INFOS INSIDE THE FIGURE HANDLE
+    set(gca,'UserData',XN_DATA);
+    %
+    % BUILDING THE CURSOR MODE FEATURE
+    POINTEROBJ = datacursormode;
+    set (POINTEROBJ,'Enable','on',...
+        'DisplayStyle','window',...
+        'UpdateFcn',@doratio);
+end
 %
 %% SAVE THE DATASET
 save(FILE_MATLAB_OUT,'XN_DATA');
 %
-% SAVING THE MAIN DATASET INFOS INSIDE THE FIGURE HANDLE
-set(gca,'UserData',XN_DATA);
-%
-% BUILDING THE CURSOR MODE FEATURE
-POINTEROBJ = datacursormode;
-set (POINTEROBJ,'Enable','on',...
-    'DisplayStyle','window',...
-    'UpdateFcn',@doratio);
-%
 %% FUNCTIONS
 %
 % FUNCTION doratio FOR "ON THE FLY" SPECTRAL RATIO CALCULUS
-    function output_txt = doratio(obj,event_obj)
+    function output_txt = doratio(~,event_obj)
         % Display the position of the data cursor
         % obj          Currently not used (empty)
         % event_obj    Handle to event object
@@ -452,7 +458,7 @@ set (POINTEROBJ,'Enable','on',...
         hold on;
         PLT_STDP=semilogx(XN_DATA.HV_RATIO_Fc,...
             XN_DATA.HV_RATIO(:,I)+XN_DATA.HV_STD(:,I),'r');
-        PLT_STDM=semilogx(XN_DATA.HV_RATIO_Fc,...
+        semilogx(XN_DATA.HV_RATIO_Fc,...
             XN_DATA.HV_RATIO(:,I)-XN_DATA.HV_STD(:,I),'r');
         semilogx(XN_DATA.MAX_HV_F(I),...
             XN_DATA.MAX_HV_RATIO(I),...

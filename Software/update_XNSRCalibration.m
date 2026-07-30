@@ -49,7 +49,7 @@ if isempty(pool)
 end
 
 calibrationTimer = tic;
-XN_DATA = XN_Cruncher(fileList,outputPath,configPath);
+XN_DATA = XN_Cruncher(fileList,outputPath,configPath,false);
 elapsedSeconds = toc(calibrationTimer);
 
 assert(isfile(outputPath), ...

@@ -110,6 +110,16 @@ write `<dataset>.mat` to `DataOut/Triang` or
 reference. Custom parameter files can still be passed directly as the
 third argument of `XN_Cruncher`.
 
+`XN_Cruncher` displays its interactive result figure by default. For
+background or batch processing, pass `false` as the fourth argument:
+
+```matlab
+XN_DATA = XN_Cruncher(fileList,outputPath,configPath,false);
+```
+
+The regression tests and DataCalib maintenance utilities use this
+non-graphical mode automatically.
+
 An existing output can also be checked manually:
 
 ```matlab

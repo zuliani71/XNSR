@@ -48,7 +48,7 @@ if isempty(pool)
 end
 
 testTimer = tic;
-XN_DATA = XN_Cruncher(fileList,outputPath,configPath);
+XN_DATA = XN_Cruncher(fileList,outputPath,configPath,false);
 elapsedSeconds = toc(testTimer);
 CALIBRATION_REPORT = compare_XNSRCalibration( ...
     outputPath,calibrationPath);
