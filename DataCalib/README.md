@@ -25,12 +25,19 @@ compare_XNSRCalibration( ...
     fullfile('DataCalib','Triang','CA04.mat'))
 ```
 
-To regenerate one Konno–Ohmachi reference after adding `Software` to the
+Official references can be regenerated after adding `Software` to the
 MATLAB path:
 
 ```matlab
-generate_KonnoOhmachiCalibration("CA04")
+update_XNSRCalibration("CA04","Triang")
+update_XNSRCalibration("CA04","KonnoOhmachi")
 ```
 
-The generator writes directly to `DataCalib/KonnoOhmachi` and validates the
-method, parameters, dimensions and numeric fields before completing.
+The updater calls `XN_Cruncher`, writes directly to the appropriate
+`DataCalib` subdirectory, and validates the method, parameters, dimensions
+and numeric fields. It overwrites the selected official reference, so it is
+intended only for deliberate calibration maintenance. Normal tests write to
+`DataOut` and use `compare_XNSRCalibration`; they never modify `DataCalib`.
+
+`generate_KonnoOhmachiCalibration` remains available only as a compatibility
+wrapper around `update_XNSRCalibration(NAME,"KonnoOhmachi")`.

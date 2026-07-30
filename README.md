@@ -129,18 +129,21 @@ one-sided FFT normalization and current Konno–Ohmachi filter, but it is not
 called by `XN_Cruncher`, whose workflow additionally performs segmentation,
 rotations, statistics and parallel page-wise processing.
 
-One Konno–Ohmachi calibration can be regenerated with:
+Official calibration references are maintained with the general updater:
 
 ```matlab
-generate_KonnoOhmachiCalibration("CA04")
+update_XNSRCalibration("CA04","Triang")
+update_XNSRCalibration("CA04","KonnoOhmachi")
 ```
 
-The accepted dataset names are listed in
-`Software/generate_KonnoOhmachiCalibration.m`. Outputs are written to
-`DataCalib/KonnoOhmachi` using `Cfg/XN_Cruncher_Konno.cfg`.
-
-Triangular calibration references are stored separately in
-`DataCalib/Triang`.
+`update_XNSRCalibration` always delegates the scientific calculation to
+`XN_Cruncher`. It uses `Cfg/XN_Cruncher.cfg` for triangular smoothing and
+`Cfg/XN_Cruncher_Konno.cfg` for Konno–Ohmachi smoothing, validates the
+result, and writes it to `DataCalib/Triang` or
+`DataCalib/KonnoOhmachi`. This maintenance function intentionally replaces
+the official reference and must not be used as a regression test. The old
+`generate_KonnoOhmachiCalibration` entry point is retained only as a
+compatibility wrapper.
 
 When a percentage-based triangular window is narrower than the FFT bin
 spacing and contains no samples, `triangFilter` uses the closest available
