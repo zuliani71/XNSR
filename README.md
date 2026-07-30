@@ -92,9 +92,15 @@ The XNSR paths should be listed first. Regression tests are available in:
 ```matlab
 run('Software/test_fft2ft.m')
 run('Software/test_triangFilter.m')
+run('Software/test_hv_konno.m')
 run('Software/test_KonnoOhmachiFilter.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
+
+`hv_konno` is a standalone simplified H/V utility. It uses the shared
+one-sided FFT normalization and current Konno–Ohmachi filter, but it is not
+called by `XN_Cruncher`, whose workflow additionally performs segmentation,
+rotations, statistics and parallel page-wise processing.
 
 One Konno–Ohmachi calibration can be regenerated with:
 

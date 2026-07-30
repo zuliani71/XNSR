@@ -1,76 +1,61 @@
-
 function HV = hv_konno(XYZ,varargin)
-% HV = hv_konno(XYZ,varagin)calculates
-% the H/V ratio over the XYZ dataset.
-% The calculus is performed using the
-% a simple fft ratio and a smoothing
-% function by KonnoOhmachi.
-% XYZ is a matrix of column vectors.
-% 1st vector is the N component
-% 2nd vector is the E component
-% 3rd vector is the V component
-% By default the sampling rate is 1s = 100Hz, you can change it
-%   using a 3rd parameter
-% By default the KonnoOhmachi paremeter used by hv_konno is 40, you can change
-%   it using a 4th parameter
-% By default the fft size used by hv_konno is the full length of the signal,
-%   you can change it using a 5th parameter
+%HV_KONNO Calculate a simplified Konno-Ohmachi H/V spectrum.
+%   HV = HV_KONNO(XYZ) accepts an N-by-3 matrix containing the two
+%   horizontal components followed by the vertical component. The output
+%   columns contain frequency and smoothed H/V ratio.
 %
+%   HV = HV_KONNO(XYZ,FS,B,NFFT) selects sampling frequency FS
+%   (default 100 Hz), Konno-Ohmachi coefficient B (default 40), and FFT
+%   size NFFT (default 512).
 %
-% e.g. hv_konno(XYZ,100,40,1024); will work at 100Hz os sampling frequency
-% with the KonnoOhmachi parameter set at 40 and the fft size set to 1024
+%   This is a standalone simplified utility. XN_Cruncher performs its own
+%   segmented, rotated and parallel H/V processing and does not call it.
 
-% DEFAULTS
-SAMPFREQ =   100;
-KONNOPAR =   40;
-FFTSIZE  =   512;
-%
-% DEALING WITH INPUT ARGUMENTS
-switch length(varargin)
-    case 1
-        if ~isempty(varargin{1})
-            SAMPFREQ=varargin{1};
-        end
-    case 2
-        if ~isempty(varargin{1})
-            SAMPFREQ=varargin{1};
-        end
-        if ~isempty(varargin{2})
-            KONNOPAR=varargin{2};
-        end        
-    case 3
-        if ~isempty(varargin{1})
-            SAMPFREQ=varargin{1};
-        end
-        if ~isempty(varargin{2})
-            KONNOPAR=varargin{2};
-        end
-        if ~isempty(varargin{3})
-            FFTSIZE=varargin{3};
-        end
+narginchk(1,4);
+validateattributes(XYZ,{'numeric'}, ...
+    {'2d','ncols',3,'nonempty','finite'},mfilename,'XYZ',1);
+
+sampleFrequency = 100;
+konnoCoefficient = 40;
+fftSize = 512;
+if numel(varargin) >= 1 && ~isempty(varargin{1})
+    sampleFrequency = varargin{1};
 end
-%
-% DEALING WITH INPUT DATASET
-H1  =   XYZ(:,1);
-H2  =   XYZ(:,2);
-V   =   XYZ(:,3);
-%
-% DOING GEOMETRIC AVERAGE
-H   =   sqrt(H1.*H2);
-%
-% WORKING ON THE VERTICAL COMPONENT
-SV = fft(V,FFTSIZE)/FFTSIZE;
-SV = 2*abs(SV(1:ceil(FFTSIZE/2)));
-% WORKING ON THE HORIZONTAL COMPONENTS
-SH = fft(H,FFTSIZE)/FFTSIZE;
-SH = 2*abs(SH(1:ceil(FFTSIZE/2)));
-%
-% WORKING WITH THE FREQUENCY VECTOR
-FH = (SAMPFREQ/2*linspace(0,1,ceil(FFTSIZE/2)))';
-% 
-% KonnoOhmachi SMOOTHING
-SV  = KonnoOhmachi(SV,FH,KONNOPAR);
-SH  = KonnoOhmachi(SH,FH,KONNOPAR);
-%
-% H/V ratio
-HV = [FH,(SH./SV)];
+if numel(varargin) >= 2 && ~isempty(varargin{2})
+    konnoCoefficient = varargin{2};
+end
+if numel(varargin) == 3 && ~isempty(varargin{3})
+    fftSize = varargin{3};
+end
+
+validateattributes(sampleFrequency,{'numeric'}, ...
+    {'scalar','real','finite','positive'},mfilename,'FS',2);
+validateattributes(konnoCoefficient,{'numeric'}, ...
+    {'scalar','real','finite','positive'},mfilename,'B',3);
+validateattributes(fftSize,{'numeric'}, ...
+    {'scalar','integer','finite','positive'},mfilename,'NFFT',4);
+
+% Build correctly normalized one-sided amplitude spectra for both
+% horizontal components and the vertical component.
+fullSpectrum = fft(XYZ,fftSize,1);
+[amplitude,frequency] = spectral.oneSidedAmplitudeFromFFT( ...
+    fullSpectrum,sampleFrequency,1);
+amplitude = abs(amplitude);
+
+horizontalAmplitude = sqrt(amplitude(:,1).*amplitude(:,2));
+verticalAmplitude = amplitude(:,3);
+
+% Konno-Ohmachi windows are defined for positive center frequencies.
+% Preserve the unsmoothed DC value and smooth all strictly positive bins.
+positive = frequency > 0;
+smoothed = [horizontalAmplitude,verticalAmplitude];
+if any(positive)
+    weights = KonnoOhmachiWeights( ...
+        frequency(positive),frequency(positive),konnoCoefficient);
+    smoothed(positive,:) = KonnoOhmachiFilter( ...
+        smoothed(positive,:),frequency(positive), ...
+        frequency(positive),konnoCoefficient,weights);
+end
+
+HV = [frequency,smoothed(:,1)./smoothed(:,2)];
+end
