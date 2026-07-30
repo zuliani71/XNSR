@@ -168,6 +168,12 @@ spacing and contains no samples, `triangFilter` uses the closest available
 frequency bin. This prevents undefined `0/0` outputs without changing any
 frequency whose original triangular window already contained samples.
 
+The triangular implementation builds its sparse smoothing weights once
+with `triangFilterWeights` and reuses them inside the page-wise `parfor`.
+This removes repeated window construction and the historical large
+`repmat`/`accumarray` temporary arrays while preserving the numerical
+result.
+
 The Konno-Ohmachi implementation precomputes its normalized smoothing
 weights once and reuses them inside the page-wise `parfor`. Filtering is
 performed as a matrix product, avoiding the large temporary arrays produced

@@ -33,4 +33,29 @@ assert(isequal(size(actual3),[2,3,2]));
 assert(all(isfinite(actual3),'all'));
 assert(isequal(squeeze(actual3(1,:,:)),squeeze(x3(nearestBin,:,:))));
 
+% Precomputed sparse weights must reproduce the direct calculation.
+fcVector = [fcEmpty;fcRegular;0.8];
+weights = triangFilterWeights(f,fcVector,20);
+assert(issparse(weights));
+direct = triangFilter(x3,f,fcVector,20);
+precomputed = triangFilter(x3,f,fcVector,20,weights);
+assert(max(abs(direct(:)-precomputed(:))) <= ...
+    10*eps(max(abs(direct(:)))));
+
+% Compare against the historical per-frequency definition.
+manual = zeros(numel(fcVector),size(xMatrix,2));
+for centerIndex = 1:numel(fcVector)
+    mask = f >= fcVector(centerIndex)*(1-20/100) & ...
+        f <= fcVector(centerIndex)*(1+20/100);
+    if ~any(mask)
+        [~,index] = min(abs(f-fcVector(centerIndex)));
+        mask(index) = true;
+    end
+    manual(centerIndex,:) = ...
+        sum(xMatrix(mask,:).*triang(nnz(mask)),1)/nnz(mask);
+end
+optimized = triangFilter(xMatrix,f,fcVector,20,weights);
+assert(max(abs(manual(:)-optimized(:))) <= ...
+    10*eps(max(abs(manual(:)))));
+
 fprintf('TUTTI I TEST TRIANGFILTER SONO SUPERATI\n');

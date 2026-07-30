@@ -331,6 +331,11 @@ switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
     case 'T'
         % TRIANGULAR FILTERING
         disp('WORKING WITH TRIANGULAR SMOOTHING');
+        TRIANG_FC = PARAM.COMM.fc;
+        TRIANG_PERCENT = PARAM.TRIANG.perc;
+        TRIANG_WEIGHTS = triangFilterWeights( ...
+            F_VECT,TRIANG_FC,TRIANG_PERCENT);
+        NUM_SPECTRA = size(FT_XY_ROT,2);
         switch upper(PARAM.SCRIPT.CALCULUS_MODE)
             case {'MIXED','M'}
                 %
@@ -342,16 +347,23 @@ switch upper(PARAM.SCRIPT.SMOOTHING_WIN_TYPE)
                 % FASTER WITH BIG DASASETS
                 tic
                 parfor i = 1:size(FT_XY_ROT,3)
-                    XY_SPECTRUM(:,:,i) = triangFilter(FT_XY_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
-                    Z_SPECTRUM(:,:,i)  = triangFilter(FT_Z_ROT(:,:,i),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
+                    FILTERED = triangFilter( ...
+                        [FT_XY_ROT(:,:,i),FT_Z_ROT(:,:,i)], ...
+                        F_VECT,TRIANG_FC,TRIANG_PERCENT,TRIANG_WEIGHTS);
+                    XY_SPECTRUM(:,:,i) = FILTERED(:,1:NUM_SPECTRA);
+                    Z_SPECTRUM(:,:,i) = FILTERED(:,NUM_SPECTRA+1:end);
                 end
                 toc
             case {'VECTORIZATION','V'}
                 %
                 % SLOWER FOR BIG AMMOUNT OF MEMORY USAGE BUT
                 % FASTER WITH SMALL DASASETS
-                XY_SPECTRUM = triangFilter(FT_XY_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
-                Z_SPECTRUM  = triangFilter(FT_Z_ROT(:,:,:),F_VECT,PARAM.COMM.fc,PARAM.TRIANG.perc);
+                XY_SPECTRUM = triangFilter( ...
+                    FT_XY_ROT,F_VECT,TRIANG_FC, ...
+                    TRIANG_PERCENT,TRIANG_WEIGHTS);
+                Z_SPECTRUM = triangFilter( ...
+                    FT_Z_ROT,F_VECT,TRIANG_FC, ...
+                    TRIANG_PERCENT,TRIANG_WEIGHTS);
                 XY_SPECTRUM = squeeze(XY_SPECTRUM);
                 Z_SPECTRUM  = squeeze(Z_SPECTRUM);
         end
