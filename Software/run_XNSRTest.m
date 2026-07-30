@@ -10,6 +10,11 @@ arguments
     smoothingMethod (1,1) string
 end
 
+% Make the test reproducible even when another project provides functions
+% with the same legacy names (for example readsac, readtracks or fft2ft).
+softwarePath = fileparts(mfilename('fullpath'));
+addpath(softwarePath,'-begin');
+
 [datasetName,fileList,repositoryPath] = ...
     get_XNSRDatasetFiles(datasetName);
 smoothingMethod = string(validatestring(smoothingMethod, ...
