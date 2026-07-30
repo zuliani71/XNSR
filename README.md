@@ -37,10 +37,14 @@ The XNSR distribution is made of the following dirs and files:
     - **XN_plotmatdata.m**: it plots results saved by XN_Cruncher.m. The
       default representation is 2D; an optional argument selects the 3D
       representation. A GUI lets you select a saved XNSR `.mat` file.
-    - **test_XN_Cruncher_[TYPE].m**: a list of matlab scripts that can be run to automatically to test one of the datasets included in the **_DataIn_** dir. [TYPE] is one of the daset types available (e.g. Polignano, Lorca, etc). Start  **test_XN_Cruncher_Full.m** if you want to run XNSR using all the datasets included inside the **_DataIn_** dir. The ouputs will be deployed automatically inside the **_DataOut_** dir. This test scripts are very useful to understand the usage of **XN_Cruncher.m**. 
+    - **test_XN_Cruncher_[DATASET]_[METHOD].m**: reproducible tests for
+      every dataset and both smoothing methods. `[METHOD]` is `Triang` or
+      `Konno`. **test_XN_Cruncher_Full.m** runs all 18 combinations;
+      method-specific full tests are also available.
 - **_Cfg_**: XN_Cruncher.m needs different parameters which can be set inside a config (cfg) file. **_Cfg_** includes some examples of config file. XN_Cruncher.m accept a 3rd input parameter which is the cfg file. If the cfg file is excluded the script will use a set of defaults parameters embedded inside the code.
 - **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
-- **_DataOut_**: this dir should include just a README.md file when you clone the XNSR repo on your computer. It is used to automatically save all the .mat output files poroduced by the **test_XN_Cruncher_[TYPE].m** scripts
+- **_DataOut_**: generated test results, organized under **_Triang_** and
+  **_KonnoOhmachi_** with the same hierarchy as **_DataCalib_**.
 - **_DataCalib_**: this dir includes pre-elaborated `.mat` outputs produced
   by **XN_Cruncher.m** over the datasets inside **_DataIn_**.
   **_DataCalib/Triang_** contains the references generated with triangular
@@ -56,21 +60,11 @@ The XNSR distribution is made of the following dirs and files:
   versioned copy of the common `+spectral` library inside **_Software_**.
   Adding only **_Software_** makes both the legacy entry points and the
   namespaced functions (`spectral.*`) available;
-- check that the **_DataOut_** dir just inlcudes the README.md file, otherwise delete all the files included in this dir, except README.md;
-- run **test_XN_Cruncher_Full.m**; it will take some minutes depending on
-  your hardware. Every dataset script writes its result to **_DataOut_** and
-  automatically compares the scientific fields with the corresponding
-  reference in **_DataCalib/Triang_**. At the end **_DataOut_** should be
-  populated with the following `.mat` files:
-    - CA04.mat
-    - Edificio_Dorando.mat
-    - Ferrara.mat
-    - Lorca_001.mat
-    - Lorca_002.mat
-    - Polignano.mat
-    - ValMontanaia_001.mat
-    - sanGiuliano_001.mat
-    - sanGiuliano_002.mat
+- run **test_XN_Cruncher_Full_Triang.m** or
+  **test_XN_Cruncher_Full_Konno.m** to test one smoothing family. Run
+  **test_XN_Cruncher_Full.m** to execute all 18 dataset/method
+  combinations. Each result is written below **_DataOut_** and compared
+  automatically with the matching **_DataCalib_** reference;
 - run **XN_plotmatdata.m** and use it to compare the results included in
   **_DataOut_** against the appropriate pre-elaborated analysis in
   **_DataCalib/Triang_** or **_DataCalib/KonnoOhmachi_**.
@@ -103,21 +97,23 @@ run('Software/test_fft2ft.m')
 run('Software/test_triangFilter.m')
 run('Software/test_hv_konno.m')
 run('Software/test_KonnoOhmachiFilter.m')
+run('Software/test_XN_Cruncher_CA04_Triang.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
 
-The scripts named `test_XN_Cruncher_<dataset>.m` are reproducible examples
-for the nine bundled experiments. They read the three components from
-`DataIn`, write `<dataset>.mat` to `DataOut`, and call
-`compare_XNSRCalibration` against `DataCalib/Triang`. The Konno–Ohmachi
-CA04 test uses `DataCalib/KonnoOhmachi/CA04.mat`. Custom parameter files
-can be passed directly as the third argument of `XN_Cruncher`.
+The 18 scripts named `test_XN_Cruncher_<dataset>_<method>.m` are
+reproducible examples for the nine bundled experiments and both smoothing
+methods. They delegate common setup to `run_XNSRTest`, call `XN_Cruncher`,
+write `<dataset>.mat` to `DataOut/Triang` or
+`DataOut/KonnoOhmachi`, and validate it against the matching `DataCalib`
+reference. Custom parameter files can still be passed directly as the
+third argument of `XN_Cruncher`.
 
 An existing output can also be checked manually:
 
 ```matlab
 compare_XNSRCalibration( ...
-    fullfile('DataOut','CA04.mat'), ...
+    fullfile('DataOut','Triang','CA04.mat'), ...
     fullfile('DataCalib','Triang','CA04.mat'))
 ```
 
@@ -167,10 +163,9 @@ performed as a matrix product, avoiding the large temporary arrays produced
 by the historical `repmat`/`accumarray` implementation while preserving its
 numerical result.
 
-`test_XN_Cruncher_CA04_Konno.m` runs the complete 600-second CA04 dataset
-with the full azimuth/dip grid, Konno-Ohmachi smoothing and page-wise
-`parfor`. It writes `DataOut/CA04_Konno_optimized.mat`, leaving the
-historical `DataOut/CA04.mat` untouched.
+Every Konno-Ohmachi experiment test uses the complete configured time
+interval, the full azimuth/dip grid and page-wise `parfor`. Its output is
+kept separate from the triangular result under `DataOut/KonnoOhmachi`.
 
 ## References:
 - http://dx.doi.org/10.13140/RG.2.2.14803.81443<br>

@@ -11,10 +11,10 @@ datasets distributed in `DataIn`.
 Both families use the same input signals, output frequency grid and
 azimuth/dip grid. All numeric scientific fields are finite.
 
-Running any `Software/test_XN_Cruncher_<dataset>.m` script recreates the
-triangular result in `DataOut` and automatically checks its scientific
-fields against the matching file in `DataCalib/Triang`. A custom
-configuration can be passed directly as the third argument of
+Running a `Software/test_XN_Cruncher_<dataset>_<method>.m` script recreates
+one result in `DataOut/Triang` or `DataOut/KonnoOhmachi` and automatically
+checks its scientific fields against the matching calibration family. A
+custom configuration can be passed directly as the third argument of
 `XN_Cruncher`.
 
 An output can also be compared explicitly after adding `Software` to the
@@ -22,7 +22,7 @@ MATLAB path:
 
 ```matlab
 compare_XNSRCalibration( ...
-    fullfile('DataOut','CA04.mat'), ...
+    fullfile('DataOut','Triang','CA04.mat'), ...
     fullfile('DataCalib','Triang','CA04.mat'))
 ```
 
