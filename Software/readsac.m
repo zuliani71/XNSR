@@ -3,7 +3,7 @@ if nargin<1
     filename='G:\Projects\2010 - Correzione Strumentale\DRENCHIA\DRE_FV.SHE.2010.280.06.33.20';
 end;
 format short e
-% Setting SLASH for computer dependent PATHS
+% Retained for compatibility with the original SAC reader.
 if ispc
     SLASH_TYPE = '\';
 else
@@ -13,15 +13,14 @@ end
 
 SACDATA=rsac2(filename);
 if ischar(SACDATA)
-    % if an error is caught by rsac2, load_track will push out
-    % that error string instead of the data
+    % Propagate the diagnostic string returned by the low-level reader.
     File.SAC = SACDATA;
 else
     File.sta   = lh(SACDATA,'KSTNM');
     File.comp  = lh(SACDATA,'KCMPNM');
     File.Tsamp = lh(SACDATA,'DELTA');
     File.IDEP  = lh(SACDATA,'IDEP');
-    %     * IUNKN (Unknown)                     = 5 %it should be counts
+    %     * IUNKN (Unknown; normally counts)    = 5
     %     * IDISP (Displacement in nm)          = 6
     %     * IVEL (Velocity in nm/sec)           = 7
     %     * IVOLTS (Velocity in volts)          = 50
@@ -71,8 +70,8 @@ function [varargout] = rsac2(varargin);
 %    Column 1 contains time values.
 %    Column 2 contains amplitude values.
 %    Column 3 contains all SAC header information.
-%    Default byte order is big-endian.  M-file can be set to default
-%    little-endian byte order.
+%    The default byte order is big-endian; the reader automatically retries
+%    little-endian when the header indicates the opposite order.
 %
 %    usage:  output = rsac('sacfile')
 %
@@ -84,8 +83,8 @@ function [varargout] = rsac2(varargin);
 %    [SQRL, AAK] = rsac('SQRL.R','AAK.R');
 %
 %    by Michael Thorne (4/2004)   mthorne@asu.edu
-%    Modified by David Zuliani (26/07/2007) dzuliani@inogs.it (auto byte
-%    oreder selecting + error messages)
+%    Modified by David Zuliani (26/07/2007), dzuliani@inogs.it:
+%    automatic byte-order selection and improved error messages.
 
 for nrecs = 1:nargin
     
@@ -104,31 +103,28 @@ for nrecs = 1:nargin
         elseif strcmp(endian,'little-endian')
             fid = fopen(sacfile,'r','ieee-le');
         end
-        % read in single precision real header variables:
+        % Read single-precision real header variables.
         %---------------------------------------------------------------------------
         for i=1:70
             h(i) = fread(fid,1,'single');
         end
         
-        % read in single precision integer header variables:
+        % Read single-precision integer header variables.
         %---------------------------------------------------------------------------
         for i=71:105
             h(i) = fread(fid,1,'int32');
         end
         
-        % Check header version = 6 and issue warning
+        % Validate the SAC header version and byte order.
         %---------------------------------------------------------------------------
-        % If the header version is not NVHDR == 6 then the sacfile is likely of the
-        % opposite byte order.  This will give h(77) some ridiculously large
-        % number.  NVHDR can also be 4 or 5.  In this case it is an old SAC file
-        % and rsac cannot read this file in.  To correct, read the SAC file into
-        % the newest verson of SAC and w over.
+        % An unexpected NVHDR usually indicates the opposite byte order.
+        % Versions 4 and 5 are obsolete and must be rewritten by a current
+        % SAC installation before this reader can load them.
         %
         if (h(77) == 4 | h(77) == 5)
             message = ['NVHDR = 4 or 5. File: "',sacfile,'" may be from an old version of SAC.'];
             fclose(fid);
-            % if an error is caught, the message error is pushed out instead of
-            % the data
+            % Return a diagnostic string instead of invalid data.
             varargout{1}=message;
             return
         elseif h(77) == 6
@@ -138,26 +134,25 @@ for nrecs = 1:nargin
                 message = ['NVHDR = ', num2str(h(77)),' is wrong inside ', sacfile,' No operation performed.'];
                 fclose(fid);
                 varargout{1}=message;
-                % if an error is caught, the message error is pushed out instead of
-                % the data
+                % Return a diagnostic string instead of invalid data.
                 return
             end
         end
     end
     
-    % read in logical header variables
+    % Read logical header variables.
     %---------------------------------------------------------------------------
     for i=106:110
         h(i) = fread(fid,1,'int32');
     end
     
-    % read in character header variables
+    % Read character header variables.
     %---------------------------------------------------------------------------
     for i=111:302
         h(i) = (fread(fid,1,'char'))';
     end
     
-    % read in amplitudes
+    % Read amplitude samples.
     %---------------------------------------------------------------------------
     
     YARRAY     = fread(fid,'single');
@@ -168,20 +163,20 @@ for nrecs = 1:nargin
         error('LEVEN must = 1; SAC file not evenly spaced')
     end
     
-    % add header signature for testing files for SAC format
+    % Add a header signature used to recognize SAC data.
     %---------------------------------------------------------------------------
     h(303) = 77;
     h(304) = 73;
     h(305) = 75;
     h(306) = 69;
     
-    % arrange output files
+    % Assemble output arrays.
     %---------------------------------------------------------------------------
     OUTPUT(:,1) = XARRAY;
     OUTPUT(:,2) = YARRAY;
     OUTPUT(1:306,3) = h(1:306)';
     
-    %pad xarray and yarray with NaN if smaller than header field
+    % Pad sample arrays with NaN when they are shorter than the header count.
     if h(80) < 306
         OUTPUT((h(80)+1):306,1) = NaN;
         OUTPUT((h(80)+1):306,2) = NaN;
@@ -197,8 +192,7 @@ end
 function [varargout] = lh(file,varargin);
 %LH    list SAC header
 %
-%    Read or set matlab variables to SAC header variables from
-%    SAC files read in to matlab with rsac.m
+%    Read SAC headers or assign them to MATLAB variables.
 %
 %    Examples:
 %
@@ -206,12 +200,12 @@ function [varargout] = lh(file,varargin);
 %    lh(KATH)
 %
 %    To assign the SAC variable DELTA from station KATH to
-%    the matlab variable dt:
+%    the MATLAB variable dt:
 %
 %    dt = lh(KATH,'DELTA');
 %
 %    To assign the SAC variables STLA and STLO from station KATH
-%    to the matlab variables lat and lon:
+%    to the MATLAB variables lat and lon:
 %
 %    [lat,lon] = lh(KATH,'STLA','STLO')
 %
@@ -219,10 +213,9 @@ function [varargout] = lh(file,varargin);
 %
 %    See also:  RSAC, CH, BSAC, WSAC
 
-%N.B.
-% IDEP, Type of dependent variable:
+% IDEP dependent-variable types:
 %
-%     * IUNKN (Unknown)                     = 5 %it should be counts
+%     * IUNKN (Unknown; normally counts)    = 5
 %     * IDISP (Displacement in nm)          = 6
 %     * IVEL (Velocity in nm/sec)           = 7
 %     * IVOLTS (Velocity in volts)          = 50
@@ -230,7 +223,7 @@ function [varargout] = lh(file,varargin);
 %
 %
 
-% first test to see if the file is indeed a sacfile
+% Verify that the input contains the SAC signature.
 %---------------------------------------------------------------------------
 if (file(303,3)~=77 & file(304,3)~=73 & file(305,3)~=75 & file(306,3)~=69)
     error('Specified Variable is not in SAC format ...')
@@ -239,7 +232,7 @@ end
 h(1:306) = file(1:306,3);
 
 
-% read real header variables
+% Read real header variables.
 %---------------------------------------------------------------------------
 DELTA = h(1);
 if (h(1) ~= -12345 & nargin == 1); disp(sprintf('DELTA      = %0.8g',h(1))); end
@@ -362,7 +355,7 @@ if (h(62) ~= -12345 & nargin == 1); disp(sprintf('YMINIMUM   = %0.8g',h(62))); e
 YMAXIMUM = h(63);
 if (h(63) ~= -12345 & nargin == 1); disp(sprintf('YMAXIMUM   = %0.8g',h(63))); end
 
-% read integer header variables
+% Read integer header variables.
 %---------------------------------------------------------------------------
 NZYEAR = round(h(71));
 if (h(71) ~= -12345 & nargin == 1); disp(sprintf('NZYEAR     = %d',h(71))); end
@@ -413,7 +406,7 @@ if (h(96) ~= -12345 & nargin == 1); disp(sprintf('IMAGTYP    = %d',h(96))); end
 IMAGSRC = round(h(97));
 if (h(97) ~= -12345 & nargin == 1); disp(sprintf('IMAGSRC    = %d',h(97))); end
 
-%read logical header variables
+% Read logical header variables.
 %---------------------------------------------------------------------------
 LEVEN = round(h(106));
 if (h(106) ~= -12345 & nargin == 1); disp(sprintf('LEVEN      = %d',h(106))); end
@@ -424,7 +417,7 @@ if (h(108) ~= -12345 & nargin == 1); disp(sprintf('LOVROK     = %d',h(108))); en
 LCALDA = round(h(109));
 if (h(109) ~= -12345 & nargin == 1); disp(sprintf('LCALDA     = %d',h(109))); end
 
-%read character header variables
+% Read character header variables.
 %---------------------------------------------------------------------------
 KSTNM = char(h(111:118));
 if (str2double(KSTNM) ~= -12345 & nargin == 1); disp(sprintf('KSTNM      = %s', KSTNM)); end
