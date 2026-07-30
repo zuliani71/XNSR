@@ -98,6 +98,7 @@ run('Software/test_readcfg.m')
 run('Software/test_triangFilter.m')
 run('Software/test_hv_konno.m')
 run('Software/test_KonnoOhmachiFilter.m')
+run('Software/test_XN_plotmatdata.m')
 run('Software/test_XN_Cruncher_CA04_Triang.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
@@ -140,7 +141,13 @@ XN_plotmatdata()
 XN_plotmatdata("3D")
 XN_plotmatdata(fullfile(pwd,"DataCalib","Triang"))
 XN_plotmatdata(fullfile(pwd,"DataCalib","KonnoOhmachi"),"3D")
+XN_plotmatdata(fullfile(pwd,"DataCalib","Triang","CA04.mat"),"2D")
 ```
+
+Passing a MAT filename bypasses the selection dialog. Cancelling the
+dialog returns an empty result without raising an error. Before plotting,
+the function validates the `XN_DATA` structure and ignores nonfinite
+orientation results when other valid orientations are available.
 
 `hv_konno` is a standalone simplified H/V utility. It uses the shared
 one-sided FFT normalization and current Konno–Ohmachi filter, but it is not

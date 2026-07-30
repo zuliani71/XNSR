@@ -1,236 +1,257 @@
-function XN_DATA=XN_plotmatdata(varargin)
-% Made by D. Zuliani 2013/09/19
-% Modified by D. Zuliani 2025/04/12
-% XN_PLOTMATDATA() selects a MAT file from DataOut and uses a 2D view.
-% XN_PLOTMATDATA(PATH) starts file selection from PATH using a 2D view.
-% XN_PLOTMATDATA(VIEW) uses the default path and VIEW ('2D' or '3D').
-% XN_PLOTMATDATA(PATH,VIEW) selects both the initial path and view.
+function XN_DATA = XN_plotmatdata(varargin)
+%XN_PLOTMATDATA Display an XNSR MAT dataset.
+%   XN_PLOTMATDATA() selects a MAT file from DataOut using a 2D view.
+%   XN_PLOTMATDATA(PATH) accepts either a MAT file or an initial folder.
+%   XN_PLOTMATDATA(VIEW) selects the default folder and VIEW ('2D'/'3D').
+%   XN_PLOTMATDATA(PATH,VIEW) specifies both source and view.
 %
-%% DEFAULTS
+%   Cancelling the file-selection dialog returns an empty array.
+
 format long g;
-scrsz           =   get(0,'ScreenSize');
-FONT.SIZE       =   16;
-FONT.WEIGHT     =   'Bold';
-FONT.NAME       =   'Courier';
-XN_DATA         =   [];
-MAINPLOTTYPE    =   '2D';
-%
-%% PARSING INPUT ARGUMENTS
-[SCRIPTPATH, ~, ~] = fileparts(mfilename('fullpath'));
-DEFPATH = fullfile(SCRIPTPATH,'..','DataOut');
+font.Size = 16;
+font.Weight = 'Bold';
+font.Name = 'Courier';
+XN_DATA = [];
+plotType = '2D';
+
+softwarePath = fileparts(mfilename('fullpath'));
+dataSource = fullfile(softwarePath,'..','DataOut');
 narginchk(0,2);
-switch nargin
-    case 1
-        candidate = upper(char(string(varargin{1})));
-        if ismember(candidate,{'2D','2','3D','3'})
-            MAINPLOTTYPE = candidate;
-        else
-            DEFPATH = char(string(varargin{1}));
-        end
-    case 2
-        DEFPATH = char(string(varargin{1}));
-        MAINPLOTTYPE = upper(char(string(varargin{2})));
+if nargin == 1
+    candidate = upper(char(string(varargin{1})));
+    if ismember(candidate,{'2D','2','3D','3'})
+        plotType = candidate;
+    else
+        dataSource = char(string(varargin{1}));
+    end
+elseif nargin == 2
+    dataSource = char(string(varargin{1}));
+    plotType = upper(char(string(varargin{2})));
 end
-assert(ismember(MAINPLOTTYPE,{'2D','2','3D','3'}), ...
+
+assert(ismember(plotType,{'2D','2','3D','3'}), ...
     'XNSR:PlotMatData:InvalidPlotType', ...
     'Plot type must be ''2D'' or ''3D''.');
-%
-%% Load Matlab XN dataset
-[FILENAME,PATHNAME] = uigetfile('*.mat','Select the MATLAB XN Dataset',DEFPATH);
-XN_DATA=load([PATHNAME,FILENAME]);
-XN_DATA=XN_DATA.XN_DATA;
-%
-%% PLOTS
-%
-% PRELIMINAR SIGNAL PLOTS
-figure('Position',[1 1 scrsz(3)*0.365 scrsz(4)/3])
-%
-% TIME DOMAIN PLOTS
-subplot(3,2,1);
-H(1) = plot(XN_DATA.TXYZ(:,1),XN_DATA.TXYZ(:,2),'r');
-title('TIME DOMAIN');
-xlabel('T(s)');
-ylabel('X(V)');
-grid on;
-axis tight
-subplot(3,2,3);
-H(3) = plot(XN_DATA.TXYZ(:,1),XN_DATA.TXYZ(:,3),'b');
-xlabel('T(s)');
-ylabel('Y(V)');
-grid on;
-axis tight
-subplot(3,2,5);
-H(5) = plot(XN_DATA.TXYZ(:,1),XN_DATA.TXYZ(:,4),'m');
-xlabel('T(s)');
-ylabel('Z(V)');
-grid on;
-axis tight
-%
-% FREQUENCY DOMAIN PLOTS
-XFFT = fft2ft(abs(fft(XN_DATA.TXYZ(:,2))),XN_DATA.PARAM.SIG.F);
-YFFT = fft2ft(abs(fft(XN_DATA.TXYZ(:,3))),XN_DATA.PARAM.SIG.F);
-ZFFT = fft2ft(abs(fft(XN_DATA.TXYZ(:,4))),XN_DATA.PARAM.SIG.F);
-subplot(3,2,2);
-H(2) = semilogx(XFFT(:,1),20*log10(XFFT(:,2)),'r');
-title('FREQUENCY DOMAIN');
-xlabel('f(Hz)');
-ylabel('X(dB)');
-grid on;
-axis tight
-subplot(3,2,4);
-H(4) = semilogx(YFFT(:,1),20*log10(YFFT(:,2)),'b');
-xlabel('f(Hz)');
-ylabel('Y(dB)');
-grid on;
-axis tight
-subplot(3,2,6);
-H(6) = semilogx(ZFFT(:,1),20*log10(ZFFT(:,2)),'m');
-xlabel('f(Hz)');
-ylabel('Z(dB)');
-grid on;
-axis tight
-%
-% FILTERED X/N RATIO PLOTS
-figure('Position',[1 scrsz(4)/2 scrsz(3)*0.365 scrsz(4)/2])
-XN_DATA.SUB_PLT2=subplot(1,2,2);
-plot(1:10,1:10);
-set(gca,...
-    'FontSize',FONT.SIZE,...
-    'FontWeight',FONT.WEIGHT,...
-    'FontName',FONT.NAME);
-MINF    = min(XN_DATA.MAX_HV_F);
-MAXF    = max(XN_DATA.MAX_HV_F);
-STEPF   = (MAXF-MINF)/10;
-ICOLOR  = XN_DATA.MAX_HV_F;
-IDIM    = exp(6*(XN_DATA.MAX_HV_RATIO/max(XN_DATA.MAX_HV_RATIO))); % max H/V modulus proportional to circle radius
-I       = find(IDIM==0);
-IDIM(I)=1;
-axes('position', [0.05,0.1,0.4,0.8]);
-switch MAINPLOTTYPE
-    case {'2D','2'}
-        HQ=scatter(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,IDIM(:),ICOLOR(:),'filled'); %working on matlab R2018a for mac
-        axis ij;
-        xlabel('AZIMUTH ANGLE [degrees]',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        ylabel('DIP ANGLE [degrees]',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        axis([-5,XN_DATA.PARAM.GEOM.MAX_ALPHA+5,-5,XN_DATA.PARAM.GEOM.MAX_THETA+5]);
-        grid on;
-    case {'3D','3'}
-        H=stem3(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,XN_DATA.MAX_HV_RATIO,'color','k');
-        set(H,'Marker','none');
-        hold on;
-        scatter3(180/pi*XN_DATA.ALPHA_VEC,180/pi*XN_DATA.THETA_VEC,XN_DATA.MAX_HV_RATIO(:,:),IDIM(:),ICOLOR(:),'filled'); %working on matlab R2018a for mac
-        xlabel('AZIMUTH ANGLE [degrees]',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        ylabel('DIP ANGLE [degrees]',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        zlabel('X/N RATIO',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        axis([-5,XN_DATA.PARAM.GEOM.MAX_ALPHA+5,-5,XN_DATA.PARAM.GEOM.MAX_THETA+5,0,10*mean(XN_DATA.MAX_HV_RATIO)]);
-        grid on;
-end
-title('MAX(X/N) with X/N=func(AZIMUTH,DIP,f)',...
-    'FontSize',FONT.SIZE,...
-    'FontWeight',FONT.WEIGHT,...
-    'FontName',FONT.NAME);
-%
-% COLORBAR X FREQUENCY
-YTICK_VEC = 0:STEPF:MAXF;
-YTICK_LAB = (cellstr(num2str(YTICK_VEC')))';
-YTICK_VEC = (YTICK_VEC/MAXF)*256;
-H=colorbar('FontSize',FONT.SIZE,...
-    'FontWeight',FONT.WEIGHT,...
-    'FontName',FONT.NAME);
-title(H,'f[Hz]',...
-    'FontSize',FONT.SIZE,...
-    'FontWeight',FONT.WEIGHT,...
-    'FontName',FONT.NAME);
-set(gca,...
-    'FontSize',FONT.SIZE,...
-    'FontWeight',FONT.WEIGHT,...
-    'FontName',FONT.NAME);
-%
-% SAVING THE MAIN DATASET INFOS INSIDE THE FIGURE HANDLE
-set(gca,'UserData',XN_DATA);
-%
-% BUILDING THE CURSOR MODE FEATURE
-POINTEROBJ = datacursormode;
-set (POINTEROBJ,'Enable','on',...
-    'DisplayStyle','datatip',...
-    'UpdateFcn',@doratio);
-%
-%% FUNCTION doratio FOR "ON THE FLY" SPECTRAL RATIO CALCULUS
-    function output_txt = doratio(obj,event_obj)
-        % Display the position of the data cursor
-        % obj          Currently not used (empty)
-        % event_obj    Handle to event object
-        % RATIO        Works with the H/V ratios.
-        XN_DATA = get(gca,'UserData');
-        pos = get(event_obj,'Position');
-        output_txt = {['AZIMUTH=',num2str(pos(1),4),'°'],...
-            ['DIP=',num2str(pos(2),4),'°']};
-        %
-        % RECOVER SELECTED ALPHA and THETA
-        I1 = find(round(XN_DATA.ALPHA_VEC/pi*180)==round(pos(1)));
-        I2 = find(round(XN_DATA.THETA_VEC/pi*180)==round(pos(2)));
-        I = intersect(I1,I2);
-        THETA   =   XN_DATA.THETA_VEC(I)/pi*180;
-        ALPHA   =   XN_DATA.ALPHA_VEC(I)/pi*180;
-        %
-        % WORKING WITH DATA CALCULATED BY MATRIX MANIPULATIONS
-        subplot(XN_DATA.SUB_PLT2);
-        PLT_HV=semilogx(XN_DATA.HV_RATIO_Fc,...
-            XN_DATA.HV_RATIO(:,I));
-        hold on;
-        PLT_STDP=semilogx(XN_DATA.HV_RATIO_Fc,...
-            XN_DATA.HV_RATIO(:,I)+XN_DATA.HV_STD(:,I),'r');
-        PLT_STDM=semilogx(XN_DATA.HV_RATIO_Fc,...
-            XN_DATA.HV_RATIO(:,I)-XN_DATA.HV_STD(:,I),'r');
-        semilogx(XN_DATA.MAX_HV_F(I),...
-            XN_DATA.MAX_HV_RATIO(I),...
-            'bo','MarkerFaceColor','b');
-        grid on;
-        set(gca,...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        xlabel('f(Hz)',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        ylabel('X/N ratio',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        TITLE_STRING = ['AZIMUTH=',num2str(pos(1),4),'° ',...
-            'DIP=',num2str(pos(2),4),'° ',...
-            'MAX(X/N)=',num2str(XN_DATA.MAX_HV_RATIO(I),4),' ',...
-            'f_{MAX(X/N)}=',num2str(XN_DATA.MAX_HV_F(I),4),'Hz'];
-        title(TITLE_STRING,...
-            'Interpreter','tex',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        axis ([min(XN_DATA.HV_RATIO_Fc),...
-            max(XN_DATA.HV_RATIO_Fc),...
-            min(min(XN_DATA.HV_RATIO-XN_DATA.HV_STD)),...
-            max(max(XN_DATA.HV_RATIO+XN_DATA.HV_STD))]);
-        legend([PLT_HV,PLT_STDP],{'MEAN X/N RATIO','STD DEVIATION'},...
-            'Location','NorthWest',...
-            'FontSize',FONT.SIZE,...
-            'FontWeight',FONT.WEIGHT,...
-            'FontName',FONT.NAME);
-        hold off;
+assert(isfile(dataSource) || isfolder(dataSource), ...
+    'XNSR:PlotMatData:MissingSource', ...
+    'MAT file or initial folder not found: %s',dataSource);
+
+if isfile(dataSource)
+    matPath = dataSource;
+else
+    [fileName,pathName] = uigetfile( ...
+        '*.mat','Select the MATLAB XN Dataset',dataSource);
+    if isequal(fileName,0) || isequal(pathName,0)
+        return
     end
+    matPath = fullfile(pathName,fileName);
+end
+
+matVariables = whos('-file',matPath);
+assert(any(strcmp({matVariables.name},'XN_DATA')), ...
+    'XNSR:PlotMatData:InvalidDataset', ...
+    '%s does not contain an XN_DATA variable.',matPath);
+loaded = load(matPath,'XN_DATA');
+assert(isstruct(loaded.XN_DATA) && ...
+    isscalar(loaded.XN_DATA), ...
+    'XNSR:PlotMatData:InvalidDataset', ...
+    '%s does not contain a scalar XN_DATA structure.',matPath);
+XN_DATA = loaded.XN_DATA;
+validateDataset(XN_DATA,matPath);
+
+frequency = XN_DATA.HV_RATIO_Fc(:);
+alphaDegrees = 180/pi*XN_DATA.ALPHA_VEC(:);
+thetaDegrees = 180/pi*XN_DATA.THETA_VEC(:);
+maximumRatio = XN_DATA.MAX_HV_RATIO(:);
+maximumFrequency = XN_DATA.MAX_HV_F(:);
+orientationCount = numel(alphaDegrees);
+ratio = reshape(XN_DATA.HV_RATIO,numel(frequency),orientationCount);
+ratioStd = reshape(XN_DATA.HV_STD,numel(frequency),orientationCount);
+
+validOrientation = isfinite(alphaDegrees) & isfinite(thetaDegrees) & ...
+    isfinite(maximumRatio) & isfinite(maximumFrequency);
+assert(any(validOrientation), ...
+    'XNSR:PlotMatData:NoFiniteOrientations', ...
+    'XN_DATA contains no finite orientation results to plot.');
+
+screenSize = get(groot,'ScreenSize');
+figure('Position',[1 1 screenSize(3)*0.365 screenSize(4)/3]);
+plotSignalAndSpectrum(XN_DATA);
+
+figure('Position', ...
+    [1 screenSize(4)/2 screenSize(3)*0.365 screenSize(4)/2]);
+ratioAxes = subplot(1,2,2);
+plot(ratioAxes,NaN,NaN);
+set(ratioAxes,'FontSize',font.Size, ...
+    'FontWeight',font.Weight,'FontName',font.Name);
+
+plotAlpha = alphaDegrees(validOrientation);
+plotTheta = thetaDegrees(validOrientation);
+plotRatio = maximumRatio(validOrientation);
+plotFrequency = maximumFrequency(validOrientation);
+positiveMaximum = max(plotRatio);
+if positiveMaximum > 0
+    markerSize = exp(6*max(plotRatio,0)/positiveMaximum);
+else
+    markerSize = 36*ones(size(plotRatio));
+end
+
+mainAxes = axes('Position',[0.05,0.1,0.4,0.8]);
+switch plotType
+    case {'2D','2'}
+        scatter(mainAxes,plotAlpha,plotTheta,markerSize, ...
+            plotFrequency,'filled');
+        set(mainAxes,'YDir','reverse');
+    case {'3D','3'}
+        stem3(mainAxes,plotAlpha,plotTheta,plotRatio, ...
+            'Color','k','Marker','none');
+        hold(mainAxes,'on');
+        scatter3(mainAxes,plotAlpha,plotTheta,plotRatio, ...
+            markerSize,plotFrequency,'filled');
+        zlabel(mainAxes,'X/N RATIO', ...
+            'FontSize',font.Size,'FontWeight',font.Weight, ...
+            'FontName',font.Name);
+end
+xlabel(mainAxes,'AZIMUTH ANGLE [degrees]', ...
+    'FontSize',font.Size,'FontWeight',font.Weight,'FontName',font.Name);
+ylabel(mainAxes,'DIP ANGLE [degrees]', ...
+    'FontSize',font.Size,'FontWeight',font.Weight,'FontName',font.Name);
+title(mainAxes,'MAX(X/N) with X/N=func(AZIMUTH,DIP,f)', ...
+    'FontSize',font.Size,'FontWeight',font.Weight,'FontName',font.Name);
+grid(mainAxes,'on');
+axis(mainAxes,'tight');
+colorHandle = colorbar(mainAxes);
+title(colorHandle,'f[Hz]', ...
+    'FontSize',font.Size,'FontWeight',font.Weight,'FontName',font.Name);
+set(mainAxes,'FontSize',font.Size, ...
+    'FontWeight',font.Weight,'FontName',font.Name);
+
+XN_DATA.SUB_PLT2 = ratioAxes;
+set(mainAxes,'UserData',XN_DATA);
+pointerObject = datacursormode(ancestor(mainAxes,'figure'));
+set(pointerObject,'Enable','on','DisplayStyle','datatip', ...
+    'UpdateFcn',@displayRatio);
+
+    function outputText = displayRatio(~,eventObject)
+        position = get(eventObject,'Position');
+        [~,orientationIndex] = min( ...
+            (alphaDegrees-position(1)).^2 + ...
+            (thetaDegrees-position(2)).^2);
+        outputText = { ...
+            ['AZIMUTH=',num2str(alphaDegrees(orientationIndex),4),'°'], ...
+            ['DIP=',num2str(thetaDegrees(orientationIndex),4),'°']};
+
+        meanRatio = ratio(:,orientationIndex);
+        standardDeviation = ratioStd(:,orientationIndex);
+        validFrequency = isfinite(frequency) & frequency > 0 & ...
+            isfinite(meanRatio) & isfinite(standardDeviation);
+        axes(ratioAxes);
+        cla(ratioAxes);
+        if ~any(validFrequency)
+            text(ratioAxes,0.5,0.5,'No finite spectral ratio available', ...
+                'HorizontalAlignment','center');
+            return
+        end
+
+        ratioLine = semilogx(ratioAxes,frequency(validFrequency), ...
+            meanRatio(validFrequency));
+        hold(ratioAxes,'on');
+        deviationLine = semilogx(ratioAxes,frequency(validFrequency), ...
+            meanRatio(validFrequency)+standardDeviation(validFrequency), ...
+            'r');
+        semilogx(ratioAxes,frequency(validFrequency), ...
+            meanRatio(validFrequency)-standardDeviation(validFrequency), ...
+            'r');
+        if isfinite(maximumFrequency(orientationIndex)) && ...
+                isfinite(maximumRatio(orientationIndex))
+            semilogx(ratioAxes,maximumFrequency(orientationIndex), ...
+                maximumRatio(orientationIndex), ...
+                'bo','MarkerFaceColor','b');
+        end
+        grid(ratioAxes,'on');
+        axis(ratioAxes,'tight');
+        xlabel(ratioAxes,'f(Hz)');
+        ylabel(ratioAxes,'X/N ratio');
+        title(ratioAxes,sprintf( ...
+            ['AZIMUTH=%.4g° DIP=%.4g° MAX(X/N)=%.4g ', ...
+             'f_{MAX(X/N)}=%.4g Hz'], ...
+            alphaDegrees(orientationIndex), ...
+            thetaDegrees(orientationIndex), ...
+            maximumRatio(orientationIndex), ...
+            maximumFrequency(orientationIndex)), ...
+            'Interpreter','tex');
+        legend(ratioAxes,[ratioLine,deviationLine], ...
+            {'MEAN X/N RATIO','STD DEVIATION'}, ...
+            'Location','NorthWest');
+        set(ratioAxes,'FontSize',font.Size, ...
+            'FontWeight',font.Weight,'FontName',font.Name);
+        hold(ratioAxes,'off');
+    end
+end
+
+function validateDataset(data,matPath)
+requiredFields = {'TXYZ','PARAM','HV_RATIO','HV_RATIO_Fc','HV_STD', ...
+    'MAX_HV_RATIO','MAX_HV_F','ALPHA_VEC','THETA_VEC'};
+missing = requiredFields(~isfield(data,requiredFields));
+assert(isempty(missing), ...
+    'XNSR:PlotMatData:MissingFields', ...
+    'XN_DATA in %s is missing: %s',matPath,strjoin(missing,', '));
+
+validateattributes(data.TXYZ,{'numeric'}, ...
+    {'2d','nonempty','ncols',4},mfilename,'XN_DATA.TXYZ');
+assert(isfield(data.PARAM,'SIG') && isfield(data.PARAM.SIG,'F') && ...
+    isnumeric(data.PARAM.SIG.F) && isscalar(data.PARAM.SIG.F) && ...
+    isfinite(data.PARAM.SIG.F) && data.PARAM.SIG.F > 0, ...
+    'XNSR:PlotMatData:InvalidSamplingFrequency', ...
+    'XN_DATA.PARAM.SIG.F must be a positive finite scalar.');
+
+numericFields = requiredFields(~strcmp(requiredFields,'PARAM'));
+for fieldIndex = 1:numel(numericFields)
+    fieldName = numericFields{fieldIndex};
+    assert(isnumeric(data.(fieldName)) && ~isempty(data.(fieldName)), ...
+        'XNSR:PlotMatData:InvalidField', ...
+        'XN_DATA.%s must be a nonempty numeric array.',fieldName);
+end
+
+orientationCount = numel(data.ALPHA_VEC);
+assert(numel(data.THETA_VEC) == orientationCount && ...
+    numel(data.MAX_HV_RATIO) == orientationCount && ...
+    numel(data.MAX_HV_F) == orientationCount, ...
+    'XNSR:PlotMatData:OrientationSizeMismatch', ...
+    'Orientation vectors and maximum-result vectors have different sizes.');
+frequencyCount = numel(data.HV_RATIO_Fc);
+assert(numel(data.HV_RATIO) == frequencyCount*orientationCount && ...
+    numel(data.HV_STD) == frequencyCount*orientationCount, ...
+    'XNSR:PlotMatData:RatioSizeMismatch', ...
+    'HV_RATIO and HV_STD dimensions do not match frequency/orientation data.');
+end
+
+function plotSignalAndSpectrum(data)
+time = data.TXYZ(:,1);
+colors = {'r','b','m'};
+labels = {'X','Y','Z'};
+for component = 1:3
+    subplot(3,2,2*component-1);
+    plot(time,data.TXYZ(:,component+1),colors{component});
+    if component == 1
+        title('TIME DOMAIN');
+    end
+    xlabel('T(s)');
+    ylabel([labels{component},'(V)']);
+    grid on;
+    axis tight
+
+    spectrum = fft2ft(abs(fft(data.TXYZ(:,component+1))), ...
+        data.PARAM.SIG.F);
+    subplot(3,2,2*component);
+    semilogx(spectrum(:,1), ...
+        20*log10(max(spectrum(:,2),realmin)),colors{component});
+    if component == 1
+        title('FREQUENCY DOMAIN');
+    end
+    xlabel('f(Hz)');
+    ylabel([labels{component},'(dB)']);
+    grid on;
+    axis tight
+end
 end
