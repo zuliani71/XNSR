@@ -42,3 +42,4 @@ CFG_FILE = [CFGPATH,SLASH_TYPE,'XN_Cruncher_2DView.cfg'];
 %
 %% Running XN_Cruncher
 XN_DATA=XN_Cruncher(FILELIST,FILE_MATLAB_OUT,CFG_FILE);
+CALIBRATION_REPORT=compare_XNSRCalibration(FILE_MATLAB_OUT);

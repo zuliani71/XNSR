@@ -39,3 +39,4 @@ FILE_MATLAB_OUT = [DATAPATH_OUT,SLASH_TYPE,'Edificio_Dorando.mat'];
 %
 %% Running XN_Cruncher
 XN_DATA=XN_Cruncher(FILELIST,FILE_MATLAB_OUT);
+CALIBRATION_REPORT=compare_XNSRCalibration(FILE_MATLAB_OUT);

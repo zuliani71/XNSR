@@ -33,6 +33,10 @@ totalSeconds = toc(testTimer);
 
 assert(isfile(outputPath),'XN_Cruncher did not create the output MAT file.');
 assert(isstruct(XN_DATA),'XN_Cruncher did not return a structure.');
+calibrationPath = fullfile(repositoryPath,'DataCalib', ...
+    'KonnoOhmachi','CA04.mat');
+CALIBRATION_REPORT = compare_XNSRCalibration( ...
+    outputPath,calibrationPath);
 assert(XN_DATA.PARAM.SCRIPT.SMOOTHING_WIN_TYPE == 'K');
 assert(ismember(upper(XN_DATA.PARAM.SCRIPT.CALCULUS_MODE),{'M','MIXED'}));
 

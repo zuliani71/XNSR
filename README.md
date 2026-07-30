@@ -55,7 +55,11 @@ The XNSR distribution is made of the following dirs and files:
   Adding only **_Software_** makes both the legacy entry points and the
   namespaced functions (`spectral.*`) available;
 - check that the **_DataOut_** dir just inlcudes the README.md file, otherwise delete all the files included in this dir, except README.md;
-- run **test_XN_Cruncher_Full.m** it will take some minutes depending on your hardware. At the end the **_DataOut_** should be populated with the following .mat files:
+- run **test_XN_Cruncher_Full.m**; it will take some minutes depending on
+  your hardware. Every dataset script writes its result to **_DataOut_** and
+  automatically compares the scientific fields with the corresponding
+  reference in **_DataCalib/Triang_**. At the end **_DataOut_** should be
+  populated with the following `.mat` files:
     - CA04.mat
     - Edificio_Dorando.mat
     - Ferrara.mat
@@ -99,6 +103,26 @@ run('Software/test_hv_konno.m')
 run('Software/test_KonnoOhmachiFilter.m')
 run('Software/test_XN_Cruncher_CA04_Konno.m')
 ```
+
+The scripts named `test_XN_Cruncher_<dataset>.m` are reproducible examples
+for the nine bundled experiments. They read the three components from
+`DataIn`, write `<dataset>.mat` to `DataOut`, and call
+`compare_XNSRCalibration` against `DataCalib/Triang`. Scripts whose name
+ends in `_CFGFILE` demonstrate the same workflow with an explicit
+configuration file. The Konno–Ohmachi CA04 test uses
+`DataCalib/KonnoOhmachi/CA04.mat`.
+
+An existing output can also be checked manually:
+
+```matlab
+compare_XNSRCalibration( ...
+    fullfile('DataOut','CA04.mat'), ...
+    fullfile('DataCalib','Triang','CA04.mat'))
+```
+
+The comparison covers H/V ratios, frequency vectors, standard deviations,
+maxima, orientation vectors and input time series. Plot handles and other
+session-specific values are intentionally excluded.
 
 `hv_konno` is a standalone simplified H/V utility. It uses the shared
 one-sided FFT normalization and current Konno–Ohmachi filter, but it is not
