@@ -1,6 +1,10 @@
 function XN_DATA=XN_plotmatdata(varargin)
 % Made by D. Zuliani 2013/09/19
 % Modified by D. Zuliani 2025/04/12
+% XN_PLOTMATDATA() selects a MAT file from DataOut and uses a 2D view.
+% XN_PLOTMATDATA(PATH) starts file selection from PATH using a 2D view.
+% XN_PLOTMATDATA(VIEW) uses the default path and VIEW ('2D' or '3D').
+% XN_PLOTMATDATA(PATH,VIEW) selects both the initial path and view.
 %
 %% DEFAULTS
 format long g;
@@ -9,23 +13,27 @@ FONT.SIZE       =   16;
 FONT.WEIGHT     =   'Bold';
 FONT.NAME       =   'Courier';
 XN_DATA         =   [];
-MAINPLOTTYPE    =   '3D';
-%
-%% Setting SLASH for computer dependent PATHS
-if ispc
-    SLASH_TYPE = '\';
-else
-    SLASH_TYPE = '/';
-end
+MAINPLOTTYPE    =   '2D';
 %
 %% PARSING INPUT ARGUMENTS
-switch length(varargin)
+[SCRIPTPATH, ~, ~] = fileparts(mfilename('fullpath'));
+DEFPATH = fullfile(SCRIPTPATH,'..','DataOut');
+narginchk(0,2);
+switch nargin
     case 1
-        DEFPATH = varargin{1};
-    otherwise
-        [SCRIPTPATH, ~, ~] = fileparts(mfilename('fullpath'));
-        DEFPATH = [SCRIPTPATH,SLASH_TYPE,'..',SLASH_TYPE,'Data'];
+        candidate = upper(char(string(varargin{1})));
+        if ismember(candidate,{'2D','2','3D','3'})
+            MAINPLOTTYPE = candidate;
+        else
+            DEFPATH = char(string(varargin{1}));
+        end
+    case 2
+        DEFPATH = char(string(varargin{1}));
+        MAINPLOTTYPE = upper(char(string(varargin{2})));
 end
+assert(ismember(MAINPLOTTYPE,{'2D','2','3D','3'}), ...
+    'XNSR:PlotMatData:InvalidPlotType', ...
+    'Plot type must be ''2D'' or ''3D''.');
 %
 %% Load Matlab XN dataset
 [FILENAME,PATHNAME] = uigetfile('*.mat','Select the MATLAB XN Dataset',DEFPATH);
@@ -170,8 +178,8 @@ set (POINTEROBJ,'Enable','on',...
         % RATIO        Works with the H/V ratios.
         XN_DATA = get(gca,'UserData');
         pos = get(event_obj,'Position');
-        output_txt = {['AZIMUTH=',num2str(pos(1),4),'°'],...
-            ['DIP=',num2str(pos(2),4),'°']};
+        output_txt = {['AZIMUTH=',num2str(pos(1),4),'Â°'],...
+            ['DIP=',num2str(pos(2),4),'Â°']};
         %
         % RECOVER SELECTED ALPHA and THETA
         I1 = find(round(XN_DATA.ALPHA_VEC/pi*180)==round(pos(1)));
@@ -205,8 +213,8 @@ set (POINTEROBJ,'Enable','on',...
             'FontSize',FONT.SIZE,...
             'FontWeight',FONT.WEIGHT,...
             'FontName',FONT.NAME);
-        TITLE_STRING = ['AZIMUTH=',num2str(pos(1),4),'° ',...
-            'DIP=',num2str(pos(2),4),'° ',...
+        TITLE_STRING = ['AZIMUTH=',num2str(pos(1),4),'Â° ',...
+            'DIP=',num2str(pos(2),4),'Â° ',...
             'MAX(X/N)=',num2str(XN_DATA.MAX_HV_RATIO(I),4),' ',...
             'f_{MAX(X/N)}=',num2str(XN_DATA.MAX_HV_F(I),4),'Hz'];
         title(TITLE_STRING,...

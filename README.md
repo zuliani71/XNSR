@@ -34,7 +34,9 @@ The XNSR distribution is made of the following dirs and files:
         - 2nd: it is the .mat output file where the results of the XNSR analysis is saved;
         - 3rd: it is a config file including the parameters used to tune the behavior  of the script (see also the details about the **_Cfg_** dir).
     The output is a matlab variable including all the calculus details. The variable is saved into a .mat file that can be used for further elaborations.
-    - **XN_plotmatdata.m**: it is the code devoted to plot results saved using XN_Cruncher.m. Just run it, a smart GUI will help you to browse your dirs and select a saved XNSR .mat file.
+    - **XN_plotmatdata.m**: it plots results saved by XN_Cruncher.m. The
+      default representation is 2D; an optional argument selects the 3D
+      representation. A GUI lets you select a saved XNSR `.mat` file.
     - **test_XN_Cruncher_[TYPE].m**: a list of matlab scripts that can be run to automatically to test one of the datasets included in the **_DataIn_** dir. [TYPE] is one of the daset types available (e.g. Polignano, Lorca, etc). Start  **test_XN_Cruncher_Full.m** if you want to run XNSR using all the datasets included inside the **_DataIn_** dir. The ouputs will be deployed automatically inside the **_DataOut_** dir. This test scripts are very useful to understand the usage of **XN_Cruncher.m**. 
 - **_Cfg_**: XN_Cruncher.m needs different parameters which can be set inside a config (cfg) file. **_Cfg_** includes some examples of config file. XN_Cruncher.m accept a 3rd input parameter which is the cfg file. If the cfg file is excluded the script will use a set of defaults parameters embedded inside the code.
 - **_Datain_**: in this dir you can find groups of three files belonging to different recordings (sites and experiments). Each group is made of the East-West (E-W), North-South (N-S) and Up (U) components recorded by a seisimometer. The dir includes both SAC and TXT files.
@@ -123,6 +125,16 @@ compare_XNSRCalibration( ...
 The comparison covers H/V ratios, frequency vectors, standard deviations,
 maxima, orientation vectors and input time series. Plot handles and other
 session-specific values are intentionally excluded.
+
+`XN_plotmatdata` uses a 2D representation by default. The initial folder
+and representation can be selected independently:
+
+```matlab
+XN_plotmatdata()
+XN_plotmatdata("3D")
+XN_plotmatdata(fullfile(pwd,"DataCalib","Triang"))
+XN_plotmatdata(fullfile(pwd,"DataCalib","KonnoOhmachi"),"3D")
+```
 
 `hv_konno` is a standalone simplified H/V utility. It uses the shared
 one-sided FFT normalization and current Konno–Ohmachi filter, but it is not
